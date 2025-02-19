@@ -14,6 +14,7 @@ import Settings from "./components/root/settings";
 import PrivacyPolicy from "./components/root/pages/privacy-policy";
 import TermsAndConditions from "./components/root/pages/terms-and-conditions";
 import Download from "./components/root/pages/download";
+import Offline302 from "./components/root/pages/offline";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
           <Route path='/privacy-policy' element={<PrivacyPolicy/>}/>
           <Route path='/terms-and-conditions' element={<TermsAndConditions/>}/>
           <Route path='/download' element={<Download/>}/>
+          <Route path='/offline-302' element={<Offline302/>}/>
         </Route>
       </Routes>
     </Suspense>
