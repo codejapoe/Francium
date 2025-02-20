@@ -24,7 +24,6 @@ Here are related side projects:
 
  - [Shadcn UI](https://ui.shadcn.com/)
  - [Shadcn Admin](https://shadcn-admin.netlify.app/)
- - [Capacitor](https://capacitorjs.com/)
 
 ## Screenshots
 
@@ -50,9 +49,10 @@ Feel free to email me via codejapoe@gmail.com.
 
 
 
-## Author
+## Collaborators
 
-[@codejapoe](https://www.github.com/codejapoe)
+Founder & Developer: [@codejapoe](https://www.github.com/codejapoe)
+Co-Founder: [@AungKaungMyatNaing](https://github.com/AungKaungMyatNaing)
 
 ## External Link
 
