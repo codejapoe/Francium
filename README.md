@@ -12,9 +12,10 @@ Database: Appwrite<br />
 Hosting: Firebase
 ## Related
 
-Here is a related side-project:
+Here are related side projects:
 
-[Francium Notification Server](https://github.com/matiassingers/awesome-readme)
+[Francium iOS](https://github.com/codejapoe/Francium-iOS)
+[Francium Notification Server](https://github.com/codejapoe/Francium-Notification)
 
 
 ## Acknowledgements
@@ -22,6 +23,12 @@ Here is a related side-project:
  - [Shadcn UI](https://ui.shadcn.com/)
  - [Shadcn Admin](https://shadcn-admin.netlify.app/)
  - [Capacitor](https://capacitorjs.com/)
+
+## Screenshots
+
+![App Screenshot 01](https://github.com/codejapoe/Francium/blob/main/public/Screenshot-01.png)
+![App Screenshot 02](https://github.com/codejapoe/Francium/blob/main/public/Screenshot-02.png)
+
 ## FAQ
 
 #### How did you come up with an idea for storing photos and videos?
@@ -35,6 +42,12 @@ $0. I used all the free services to build this project.
 #### Is it secure to use?
 
 I did not set up a backend server for this app as I did not want to spend a dime on CPU usage. I tried my best to keep it secure. However, you may contribute or sponsor for better performance and web security.
+
+#### Where to report crashes and bugs?
+Feel free to email me via codejapoe@gmail.com.
+
+
+
 ## Author
 
 [@codejapoe](https://www.github.com/codejapoe)
