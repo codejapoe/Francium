@@ -120,6 +120,12 @@ export default function AccountProfile() {
     return () => clearInterval(intervalId);
   }, [id]);
 
+  useEffect(() => {
+    if (followers.length && currentUserID) {
+      setFollowed(followers.includes(currentUserID));
+    }
+  }, [followers, currentUserID]);
+
   const fetchData = async() => {
     const response = await databases.listDocuments(
       appwriteConfig.databaseID,

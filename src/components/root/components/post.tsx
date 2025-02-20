@@ -158,7 +158,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
 
     const updatedLikes = isLiked
       ? likes.filter(id => id !== userID)
-      : [userID, ...likes];
+      : [...new Set([userID, ...likes])];
 
     databases.updateDocument(
       appwriteConfig.databaseID,
@@ -410,7 +410,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
       const currentReposts = reposts || [];
       const updatedReposts = isReposted
         ? currentReposts.filter(uid => uid !== userID)
-        : [userID, ...currentReposts];
+        : [...new Set([userID, ...currentReposts])];
 
       // Update post's reposts
       await databases.updateDocument(
