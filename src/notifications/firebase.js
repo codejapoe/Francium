@@ -44,7 +44,7 @@ export const generateToken = async () => {
                 appwriteConfig.userCollectionID,
                 user_id,
                 {
-                    fcm: [token, ...currentTokens]
+                    fcm: [...new Set([token, ...currentTokens])]
                 }
             );
         }

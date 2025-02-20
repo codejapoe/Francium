@@ -12,7 +12,7 @@ import FollowSuggestions from '../components/follow-suggestions';
 import BottomNav from '../components/bottom-nav';
 import { Loader2, Bug, Clapperboard, Image, GalleryVertical } from 'lucide-react';
 import RootLayout from "./layout";
-import { messaging } from "../../../notifications/firebase.js"
+import { generateToken, messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import Post from '../components/post'
@@ -71,6 +71,7 @@ export default function Explore() {
 
                 // Setup notification listener after successful verification
                 try {
+                  generateToken();
                   if (messaging) {
                     onMessage(messaging, (payload) => {
                       toast({

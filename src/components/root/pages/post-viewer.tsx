@@ -18,7 +18,7 @@ import 'react-photo-view/dist/react-photo-view.css';
 import RootLayout from "./layout";
 import SideNav from '../components/side-nav';
 import Trendings from '../components/trendings';
-import { messaging } from "../../../notifications/firebase.js"
+import { generateToken, messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { fetchUserDetails } from "@/lib/functions/user-functions.js";
 
@@ -163,6 +163,7 @@ const navigate = useNavigate();
 
               // Setup notification handling
               try {
+                generateToken();
                 if (messaging) {
                   onMessage(messaging, (payload) => {
                     toast({

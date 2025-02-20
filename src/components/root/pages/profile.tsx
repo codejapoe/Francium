@@ -33,7 +33,7 @@ import { GoogleDriveLogin } from "@/lib/appwrite/api";
 import { formatCount } from "@/lib/functions/count";
 import { fetchUserDetails } from "@/lib/functions/user-functions";
 import NotFoundError from './404';
-import { messaging } from "../../../notifications/firebase.js"
+import { generateToken, messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 
 export default function AccountProfile() {
@@ -286,6 +286,7 @@ export default function AccountProfile() {
 
                 // Setup notification handling
                 try {
+                  generateToken();
                   if (messaging) {
                     onMessage(messaging, (payload) => {
                       toast({

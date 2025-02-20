@@ -12,7 +12,7 @@ import FollowSuggestions from '../components/follow-suggestions';
 import BottomNav from '../components/bottom-nav';
 import { Loader2, Bug, GalleryVertical, User, Eye } from 'lucide-react';
 import RootLayout from "./layout";
-import { messaging } from "../../../notifications/firebase.js"
+import { generateToken, messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import Post from '../components/post'
@@ -80,6 +80,7 @@ export default function Search() {
 
                 // Setup notification handling
                 try {
+                  generateToken();
                   if (messaging) {
                     onMessage(messaging, (payload) => {
                       toast({

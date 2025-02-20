@@ -13,7 +13,7 @@ import FollowSuggestions from '../components/follow-suggestions.js';
 import BottomNav from '../components/bottom-nav.js';
 import { Loader2, Bug, RotateCw } from 'lucide-react';
 import RootLayout from "./layout.js";
-import { messaging } from "../../../notifications/firebase.js"
+import { generateToken, messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import Post from '../components/post.js'
@@ -68,6 +68,7 @@ export default function Bookmarks() {
 
                 // Setup notification handling
                 try {
+                  generateToken();
                   if (messaging) {
                     onMessage(messaging, (payload) => {
                       toast({
