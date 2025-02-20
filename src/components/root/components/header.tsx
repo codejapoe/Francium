@@ -71,7 +71,7 @@ export default function Header({ activeTab="followings", username, name, profile
               <span className="text-xl font-bold brand">Francium</span>
             </Link>
           </div>
-          { activeTab === "#" && Cookies.get('email') != undefined ? (
+          { activeTab === "#" ? (
             <div className='block lg:hidden'>
             <Link to="/" className="flex items-center space-x-2">
               <img src="/logo.png" alt="Francium Logo" width={24} height={24} />

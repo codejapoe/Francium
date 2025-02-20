@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react'
-import { Home, Bell, CircleUser, Compass, Bookmark, Settings } from 'lucide-react'
+import { Home, Bell, CircleUser, Compass, Bookmark, Settings, Eye, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
@@ -82,6 +82,28 @@ export default function BottomNav({ username, name, profile, verified }) {
     setPage(prev => prev + 1);
   };
 
+  const deleteNotification = async (notificationId) => {
+    try {
+      const response = await databases.getDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        user_id
+      );
+  
+      const updatedNotifications = response.notifications.filter(id => id !== notificationId);
+  
+      await databases.updateDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        user_id,
+        { notifications: updatedNotifications }
+      );
+  
+      setNotifications(prev => prev.filter(n => n.$id !== notificationId));
+    } catch (error) {
+    }
+  };
+
   return (
     <nav className={`lg:hidden fixed bottom-0 left-0 right-0 navbar-alt border-t border-border bg-background dark:bg-background`}>
       <div className="flex justify-around items-center h-14">
@@ -141,10 +163,18 @@ export default function BottomNav({ username, name, profile, verified }) {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem>
-                              <Link to={`/post/${notification.post_id}`}>View</Link>
+                            <DropdownMenuItem className='gap-2'>
+                              <Eye className="w-4 h-4" />
+                              View
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">
+                            <DropdownMenuItem 
+                              className="text-red-500 focus:text-red-600 gap-2" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                deleteNotification(notification.$id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>

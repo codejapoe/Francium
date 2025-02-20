@@ -77,21 +77,25 @@ const navigate = useNavigate();
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      setIsPostLoading(true);
-      await verifyUser();
-      await fetchData();
-      setIsPostLoading(false);
-      setIsLoading(false);
-    }
+      try {
+        setIsLoading(true);
+        setIsPostLoading(true);
+        const isVerified = await verifyUser();
+        if (isVerified) {
+          await fetchData();
+        }
+      } catch (error) {
+      } finally {
+        setIsPostLoading(false);
+        setIsLoading(false);
+      }
+    };
+
     loadData();
 
-    const intervalId = setInterval(() => {
-      fetchData();
-    }, 1000);
-
+    const intervalId = setInterval(fetchData, 1000);
     return () => clearInterval(intervalId);
-  }, [id, Cookies]);
+  }, [id]);
 
   const fetchData = async() => {
     try {
@@ -132,65 +136,56 @@ const navigate = useNavigate();
 
   const verifyUser = async () => {
     try {
-      if (Cookies.get("user_id") == undefined || Cookies.get("email") == undefined || Cookies.get("password") == undefined) {
-        Cookies.remove('user_id');
-        Cookies.remove('email');
-        Cookies.remove('password');
-        Cookies.remove('access_token');
+      // Check for required cookies
+      if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
         setUsername("");
+        return false;
       }
 
-      if (Cookies.get('email') != undefined) {
-        try {
-          const response = await databases.listDocuments(
-            appwriteConfig.databaseID,
-            appwriteConfig.userCollectionID,
-            [
-              Query.equal('email', Cookies.get('email'))
-            ]
-          );
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        [
+          Query.equal('$id', Cookies.get('user_id'))
+        ]
+      );
 
-          if (response.documents.length) {
-            if (response.documents[0].$id === Cookies.get('user_id') && response.documents[0].email === Cookies.get('email')) {
-              const password = decryptPassword(Cookies.get('password'));
-              bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
-                if (err || !isMatch) {
-                  Cookies.remove('user_id');
-                  Cookies.remove('email');
-                  Cookies.remove('password');
-                  Cookies.remove('access_token');
-                }
-                else if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-                  setUserID(response.documents[0].$id);
-                  setName(response.documents[0].name);
-                  setUsername(response.documents[0].username);
-                  setProfile(response.documents[0].profile);
-                  setVerified(response.documents[0].verified);
+      if (response.documents.length) {
+        const password = decryptPassword(Cookies.get('password') || "404");
+        return new Promise((resolve) => {
+          bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
+            if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
+              setUserID(response.documents[0].$id);
+              setUsername(response.documents[0].username);
+              setName(response.documents[0].name);
+              setProfile(response.documents[0].profile);
+              setVerified(response.documents[0].verified);
 
+              // Setup notification handling
+              try {
+                if (messaging) {
                   onMessage(messaging, (payload) => {
                     toast({
                       title: "New Notification!",
                       description: payload.notification.body,
                       duration: 3000,
                     });
-                  })
+                  });
                 }
-              });
+              } catch (error) {
+              }
+
+              resolve(true);
             } else {
-              Cookies.remove('user_id');
-              Cookies.remove('email');
-              Cookies.remove('password');
-              Cookies.remove('access_token');
+              resolve(false);
             }
-          } else {
-            Cookies.remove('user_id');
-            Cookies.remove('email');
-            Cookies.remove('password');
-            Cookies.remove('access_token');
-          }
-        } catch (error) {}
+          });
+        });
       }
-    } catch (error) {}
+      return false;
+    } catch (error) {
+      return false;
+    }
   };
 
   const refreshPosts = () => {

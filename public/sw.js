@@ -1,6 +1,6 @@
 const CACHE_NAME = 'francium-v1';
 const urlsToCache = [
-  '/offline-302',
+  '/',
   '/index.html',
   '/logo.png',
   // Add other static assets you want to cache

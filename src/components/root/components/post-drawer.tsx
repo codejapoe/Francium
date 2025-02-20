@@ -229,6 +229,14 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
       await Promise.all(uploadPromises);
       return ;
     } catch (error) {
+      Cookies.remove('access_token')
+      setAccessToken(undefined)
+      toast({
+        variant: "destructive",
+        title: "Unable to upload media",
+        description: "Please sign into Google Drive again.",
+        duration: 3000
+      })
       throw error;
     }
   };
@@ -459,13 +467,14 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
       })
 
     } catch (error) {
+      Cookies.remove('access_token')
+      setAccessToken(undefined)
       toast({
         variant: "destructive",
         title: "Error creating post",
         description: "Something went wrong. Please try again later.",
         duration: 3000
       })
-      Cookies.remove('access_token')
     }
   }
 
@@ -550,13 +559,13 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
                       <Avatar>
                         <AvatarImage src={profile} alt="Fr" className='object-cover object-center'/>
                         <AvatarFallback>Fr</AvatarFallback>
-                      </Avatar>
+                      </Avatar> 
                       <div>
                         <div className="flex items-center">
-                          <p className="font-medium">{name}</p>
-                          {verified && <TooltipProvider><Tooltip><TooltipTrigger><BadgeCheck className="h-4 w-4 text-blue-500 ml-1" /></TooltipTrigger><TooltipContent>Verified</TooltipContent></Tooltip></TooltipProvider>}
+                          <p className="font-medium">{user_id ? name : "Guest User"}</p>
+                          {user_id && verified && <TooltipProvider><Tooltip><TooltipTrigger><BadgeCheck className="h-4 w-4 text-blue-500 ml-1" /></TooltipTrigger><TooltipContent>Verified</TooltipContent></Tooltip></TooltipProvider>}
                         </div>
-                        <p className="text-sm text-muted-foreground">@{username}</p>
+                        <p className="text-sm text-muted-foreground">@{user_id ? username : "guest"}</p>
                       </div>
                     </div>
                   </div>
@@ -740,10 +749,10 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
                       </Avatar>
                       <div>
                         <div className="flex items-center">
-                          <p className="font-medium">{name}</p>
-                          {verified && <TooltipProvider><Tooltip><TooltipTrigger><BadgeCheck className="h-4 w-4 text-blue-500 ml-1" /></TooltipTrigger><TooltipContent>Verified</TooltipContent></Tooltip></TooltipProvider>}
+                          <p className="font-medium">{user_id ? name : "Guest User"}</p>
+                          {user_id && verified && <TooltipProvider><Tooltip><TooltipTrigger><BadgeCheck className="h-4 w-4 text-blue-500 ml-1" /></TooltipTrigger><TooltipContent>Verified</TooltipContent></Tooltip></TooltipProvider>}
                         </div>
-                        <p className="text-sm text-muted-foreground">@{username}</p>
+                        <p className="text-sm text-muted-foreground">@{user_id ? username : "guest"}</p>
                       </div>
                     </div>
                   </div>
@@ -891,10 +900,10 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
                       </Avatar>
                       <div>
                         <div className="flex items-center">
-                          <p className="font-medium">{name}</p>
-                          {verified && <TooltipProvider><Tooltip><TooltipTrigger><BadgeCheck className="h-4 w-4 text-blue-500 ml-1" /></TooltipTrigger><TooltipContent>Verified</TooltipContent></Tooltip></TooltipProvider>}
+                          <p className="font-medium">{user_id ? name : "Guest User"}</p>
+                          {user_id && verified && <TooltipProvider><Tooltip><TooltipTrigger><BadgeCheck className="h-4 w-4 text-blue-500 ml-1" /></TooltipTrigger><TooltipContent>Verified</TooltipContent></Tooltip></TooltipProvider>}
                         </div>
-                        <p className="text-sm text-muted-foreground">@{username}</p>
+                        <p className="text-sm text-muted-foreground">@{user_id ? username : "guest"}</p>
                       </div>
                     </div>
                   </div>

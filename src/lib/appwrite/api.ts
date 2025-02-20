@@ -85,7 +85,6 @@ export async function loginUserAccount(user: ExistingUser) {
 
     return 404;
   } catch (error) {
-    console.error("Error during login:", error);
     return 500;
   }
 }

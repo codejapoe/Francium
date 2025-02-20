@@ -97,7 +97,6 @@ export default function SideNav({ username, name, profile, verified }) {
   
       setNotifications(prev => prev.filter(n => n.$id !== notificationId));
     } catch (error) {
-      console.error('Error deleting notification:', error);
     }
   };
   
@@ -107,7 +106,7 @@ export default function SideNav({ username, name, profile, verified }) {
 
   return (
     <nav>
-      { Cookies.get('email') != undefined ? (
+      { user_id != undefined ? (
         <div className="hidden lg:flex items-center space-x-3 mb-4 px-2">
           <Avatar>
             <AvatarImage src={profile} alt="User" className='object-cover object-center' />
@@ -138,6 +137,7 @@ export default function SideNav({ username, name, profile, verified }) {
       }
       {navItems.map((item) => (
         item.label === 'Notifications' ? (
+          user_id != undefined &&
           <Sheet key={item.label} open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
             <SheetTrigger asChild className='space-y-0'>
               <Button 

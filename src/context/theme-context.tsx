@@ -29,7 +29,6 @@ export function ThemeProvider({
     const [theme, _setTheme] = useState<Theme>(() => {
         const storedTheme = localStorage.getItem(storageKey)
         if (!storedTheme) {
-            console.log(defaultTheme);
             localStorage.setItem(storageKey, defaultTheme)
         }
         return (storedTheme as Theme) || defaultTheme

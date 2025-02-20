@@ -32,27 +32,32 @@ export default function Favorite() {
   const [favorites, setFavorites] = useState([]);
   const [posts, setPosts] = useState([]);
   const [isPostsLoading, setIsPostsLoading] = useState(true);
-  const handleLogout = () => {
-    Cookies.remove('user_id');
-    Cookies.remove('email');
-    Cookies.remove('password');
-    Cookies.remove('access_token');
-    navigate("/explore");
-  }
 
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        await verifyUser();
-        await fetchPosts();
+        setIsLoading(true);
+        setIsPostsLoading(true);
+        const isVerified = await verifyUser();
+        
+        // Only fetch posts if user verification was successful
+        if (isVerified) {
+          await fetchPosts();
+        }
       } catch (error) {
       } finally {
         setIsPostsLoading(false);
         setIsLoading(false);
       }
     };
-  
-    initializeApp();
+
+    // Check if we have the necessary cookies before initializing
+    if (Cookies.get('user_id') && Cookies.get('email') && Cookies.get('password')) {
+      initializeApp();
+    } else {
+      setIsLoading(false);
+      setIsPostsLoading(false);
+    }
   }, []);
   
   useEffect(() => {
@@ -68,20 +73,22 @@ export default function Favorite() {
   }, [favorites]);
 
   const verifyUser = async () => {
-    if (Cookies.get('user_id') == undefined || Cookies.get('email') == undefined || Cookies.get('password') == undefined) {
-      handleLogout();
-    } else {
-      try {
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [
-            Query.equal('$id', Cookies.get('user_id'))
-          ]
-        );
+    if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
+      return false;
+    }
 
-        if (response.documents.length) {
-          const password = decryptPassword(Cookies.get('password') || "404");
+    try {
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        [
+          Query.equal('$id', Cookies.get('user_id'))
+        ]
+      );
+
+      if (response.documents.length) {
+        const password = decryptPassword(Cookies.get('password') || "404");
+        return new Promise((resolve) => {
           bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
             if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
               setUserID(response.documents[0].$id);
@@ -89,28 +96,33 @@ export default function Favorite() {
               setName(response.documents[0].name);
               setProfile(response.documents[0].profile);
               setVerified(response.documents[0].verified);
-              setFavorites(response.documents[0].favorites);
-              console.log(response.documents[0].favorites)
-              setIsLoading(false);
+              setFavorites(response.documents[0].favorites || []);
 
-              generateToken();
-              onMessage(messaging, (payload) => {
-                toast({
-                  title: "New Notification!",
-                  description: payload.notification.body,
-                  duration: 3000,
-                });
-              })
-            } else if (err || !isMatch) {
-              handleLogout();
+              // Setup notification handling
+              try {
+                generateToken();
+                if (messaging) {
+                  onMessage(messaging, (payload) => {
+                    toast({
+                      title: "New Notification!",
+                      description: payload.notification.body,
+                      duration: 3000,
+                    });
+                  });
+                }
+              } catch (error) {
+              }
+
+              resolve(true);
+            } else {
+              resolve(false);
             }
           });
-        } else {
-          handleLogout();
-        }
-      } catch (error) {
-        handleLogout();
+        });
       }
+      return false;
+    } catch (error) {
+      return false;
     }
   };
 
@@ -195,7 +207,6 @@ export default function Favorite() {
       // Sort posts by date (newest to oldest)
       allPosts.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
       setPosts(allPosts);
-      console.log(allPosts)
     } catch (error) {
         toast({
           variant: "destructive",

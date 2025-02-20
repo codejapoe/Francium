@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip"
-import { Heart, MessageCircle, Repeat2, Bookmark, BadgeCheck, MoreHorizontal, LinkIcon, Info, Trash2, CircleAlert, Users } from 'lucide-react'
+import { Heart, MessageCircle, Repeat2, Bookmark, BadgeCheck, MoreHorizontal, LinkIcon, Info, Trash2, CircleAlert, Users, Eye } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { PhotoProvider, PhotoView } from 'react-photo-view';
@@ -286,7 +286,6 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
         description: "Please try again later.",
         duration: 3000
       });
-      console.log(error);
     } finally {
       setIsLoadingComments(false);
     }
@@ -450,7 +449,6 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
         });
       }
     } catch (error) {
-      console.log(error);
       toast({
         variant: "destructive",
         title: "Error updating repost",
@@ -648,6 +646,108 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
     }
   };
 
+  /*
+  const follow = async () => {
+  try {
+    // First, get both users' data to access their current followers and followings
+    const [targetUser, currentUser] = await Promise.all([
+      databases.getDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        user_id
+      ),
+      databases.getDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        currentUserID
+      )
+    ]);
+
+    const followers = targetUser.followers || [];
+    const followings = currentUser.followings || [];
+
+    const [
+      notificationID,
+      userData
+    ] = await Promise.all([
+      // Update followers
+      databases.updateDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        user_id,
+        {
+          followers: [...new Set([currentUserID, ...followers])]
+        }
+      ),
+      // Update followings
+      databases.updateDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        currentUserID,
+        {
+          followings: [...new Set([user_id, ...followings])]
+        }
+      ),
+      // Create notification document
+      databases.createDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.notificationCollectionID,
+        ID.unique(),
+        {
+          user_id: currentUserID,
+          description: currentUsername + " started following you.",
+          action_id: currentUserID,
+          type: "follow",
+        }
+      ),
+      // Get user's current notifications
+      databases.getDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        user_id
+      )
+    ]);
+
+    // Send notification to server
+    try {
+      fetch('https://francium-notification.onrender.com/follow', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: currentUsername,
+          userID: user_id
+        })
+      });
+    } catch (error) {}
+
+    // Update notifications array
+    const currentNotifications = userData.notifications || [];
+    await databases.updateDocument(
+      appwriteConfig.databaseID,
+      appwriteConfig.userCollectionID,
+      user_id,
+      {
+        notifications: [notificationID.$id, ...currentNotifications]
+      }
+    );
+
+    toast({
+      title: "Followed successfully",
+      description: `You will start seeing @${username}'s posts on your feed.`,
+      duration: 3000
+    });
+  } catch (error) {
+    toast({
+      variant: "destructive",
+      title: "Error following user",
+      description: "Please try again later.",
+      duration: 3000
+    });
+  }
+}*/
+
   return (
     <>
       <Card className="mb-4">
@@ -666,10 +766,12 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
           }
           <div className="flex items-start justify-between">
             <div className="flex items-start space-x-4">
+              <Link to={'/' + username}>
               <Avatar>
                 <AvatarImage src={profile} alt={name} className='object-cover object-center'/>
                 <AvatarFallback>Fr</AvatarFallback>
               </Avatar>
+              </Link>
               <div>
                 <div className="flex items-center">
                   <p className="font-medium">{name}</p>
@@ -681,6 +783,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
                 </p>
               </div>
             </div>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -689,6 +792,10 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => {window.location.href = `https://francium-app.web.app/post/${id}`}}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View post
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {navigator.clipboard.writeText(`https://francium-app.web.app/post/${id}`); toast({title: "Copied to clipboard."});}}>
                   <LinkIcon className="w-4 h-4 mr-2" />
                   Copy link
@@ -740,18 +847,14 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
             </PhotoProvider>
           )}
           {files.length === 1 && type === "post" && (
-            <PhotoProvider>
-              <PhotoView src={ files[0] }>
-                <img
-                  src={files[0]}
-                  alt={`Media 1`}
-                  className="object-cover"
-                  onError={(e) => {
-                    e.currentTarget.src = "https://placehold.co/600x600/020617/FFFFFF?text=Click+to+view+the+file";
-                  }}
-                />
-              </PhotoView>
-            </PhotoProvider>
+            <AspectRatio ratio={16 / 9}>
+              <iframe 
+                src={`${files[0]}?autoplay=1`}
+                allow="autoplay; fullscreen" 
+                allowFullScreen 
+                className="w-full h-full rounded-md"
+              />
+            </AspectRatio>
           )}
           {files && type === "carousel" && (
             <PhotoProvider>
@@ -781,7 +884,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
           )}
           {files && type === "reel" && (
             <AspectRatio ratio={9 / 16}>
-              <iframe src={files[0]} allow="autoplay; fullscreen" allowFullScreen className="object-cover w-full h-full"></iframe>
+              <iframe src={`${files[0]}?autoplay=1`} allow="autoplay; fullscreen" allowFullScreen className="object-cover w-full h-full"></iframe>
             </AspectRatio>
           )}
         </CardContent>

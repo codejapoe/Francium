@@ -34,24 +34,18 @@ export default function Bookmarks() {
   const [bookmarks, setBookmarks] = useState([]);
   const [posts, setPosts] = useState([]);
   const [postUserDetails, setPostUserDetails] = useState([]);
-  const handleLogout = () => {
-    Cookies.remove('user_id');
-    Cookies.remove('email');
-    Cookies.remove('password');
-    Cookies.remove('access_token');
-    navigate("/sign-in");
-  };
 
   useEffect(() => {
     const verifyUser = async () => {
-      setIsLoading(true);
-
-      if (Cookies.get('user_id') == undefined || Cookies.get('email') == undefined || Cookies.get('password') == undefined) {
-        handleLogout();
-        return;
-      }
-
       try {
+        setIsLoading(true);
+        
+        // Check if we have the necessary cookies
+        if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
+          setIsLoading(false);
+          return;
+        }
+
         const response = await databases.listDocuments(
           appwriteConfig.databaseID,
           appwriteConfig.userCollectionID,
@@ -62,32 +56,40 @@ export default function Bookmarks() {
 
         if (response.documents.length) {
           const password = decryptPassword(Cookies.get('password') || "404");
-          bcrypt.compare(password, response.documents[0].password, async (err, isMatch) => {
-            if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-              setUserID(response.documents[0].$id);
-              setUsername(response.documents[0].username);
-              setName(response.documents[0].name);
-              setProfile(response.documents[0].profile);
-              setVerified(response.documents[0].verified);
-              setBookmarks(response.documents[0].bookmarks);
-              setIsLoading(false);
+          return new Promise((resolve) => {
+            bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
+              if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
+                setUserID(response.documents[0].$id);
+                setUsername(response.documents[0].username);
+                setName(response.documents[0].name);
+                setProfile(response.documents[0].profile);
+                setVerified(response.documents[0].verified);
+                setBookmarks(response.documents[0].bookmarks || []);
 
-              onMessage(messaging, (payload) => {
-                toast({
-                  title: "New Notification!",
-                  description: payload.notification.body,
-                  duration: 3000,
-                });
-              });
-            } else {
-              handleLogout();
-            }
+                // Setup notification handling
+                try {
+                  if (messaging) {
+                    onMessage(messaging, (payload) => {
+                      toast({
+                        title: "New Notification!",
+                        description: payload.notification.body,
+                        duration: 3000,
+                      });
+                    });
+                  }
+                } catch (error) {
+                }
+
+                resolve(true);
+              } else {
+                resolve(false);
+              }
+            });
           });
-        } else {
-          handleLogout();
         }
       } catch (error) {
-        handleLogout();
+      } finally {
+        setIsLoading(false);
       }
     };
 

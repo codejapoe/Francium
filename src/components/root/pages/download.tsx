@@ -18,19 +18,7 @@ export default function Download() {
         root.classList.remove('light', 'dark', 'neon')
         root.classList.add(savedTheme)
         }
-    }, [])
-
-    const handleIOSDownload = () => {
-        const url = 'https://francium.rf.gd/download.php';
-        // Force open in Safari for iOS devices
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-            window.location.href = `safari://${url}`;
-        } else {
-            window.location.href = url;
-        }
-    };
-
-    useEffect(() => {
+        
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             setDeferredPrompt(e);
@@ -55,7 +43,7 @@ export default function Download() {
                     <p className="text-sm text-muted-foreground">Choose your platform</p>
                 </div>
                 <div></div>
-                <Button className="w-full" onClick={handleIOSDownload}>
+                <Button className="w-full" onClick={() => window.location.href = "https://francium.rf.gd/download.php"}>
                     <FaApple className='h-4 w-4 mr-2'/>
                     iOS
                 </Button>

@@ -45,8 +45,12 @@ export default function Home() {
       try {
         setIsLoading(true);
         setIsPostsLoading(true);
-        await verifyUser();
-        await fetchPosts();
+        const isVerified = await verifyUser();
+        
+        // Only fetch posts if user verification was successful
+        if (isVerified) {
+          await fetchPosts();
+        }
       } catch (error) {
       } finally {
         setIsPostsLoading(false);
@@ -54,7 +58,13 @@ export default function Home() {
       }
     };
   
-    initializeApp();
+    // Check if we have the necessary cookies before initializing
+    if (Cookies.get('user_id') && Cookies.get('email') && Cookies.get('password')) {
+      initializeApp();
+    } else {
+      setIsLoading(false);
+      setIsPostsLoading(false);
+    }
   }, []);
   
   useEffect(() => {
@@ -79,21 +89,23 @@ export default function Home() {
     return () => clearInterval(intervalId);
   }, [followings]);
 
-  const verifyUser = async () => {
-    if (Cookies.get('user_id') == undefined || Cookies.get('email') == undefined || Cookies.get('password') == undefined) {
-      handleLogout();
-    } else {
-      try {
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [
-            Query.equal('$id', Cookies.get('user_id'))
-          ]
-        );
+    const verifyUser = async () => {
+    if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
+      return false;
+    }
 
-        if (response.documents.length) {
-          const password = decryptPassword(Cookies.get('password') || "404");
+    try {
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        [
+          Query.equal('$id', Cookies.get('user_id'))
+        ]
+      );
+
+      if (response.documents.length) {
+        const password = decryptPassword(Cookies.get('password') || "404");
+        return new Promise((resolve) => {
           bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
             if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
               setUserID(response.documents[0].$id);
@@ -111,17 +123,18 @@ export default function Home() {
                   description: payload.notification.body,
                   duration: 3000,
                 });
-              })
-            } else if (err || !isMatch) {
+              });
+              resolve(true);
+            } else {
               handleLogout();
+              resolve(false);
             }
           });
-        } else {
-          handleLogout();
-        }
-      } catch (error) {
-        handleLogout();
+        });
       }
+      return false;
+    } catch (error) {
+      return false;
     }
   };
 

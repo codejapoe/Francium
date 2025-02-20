@@ -85,55 +85,40 @@ export default function AccountProfile() {
 
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      setIsPostsLoading(true);
-      setIsBtnLoading(true);
-      await verifyUser();
-      setIsLoading(false);
-      await fetchData();
-
-      if (followers.includes(currentUserID)) {
-        setFollowed(true);
-      } else {
-        setFollowed(false);
+      try {
+        setIsLoading(true);
+        setIsPostsLoading(true);
+        setIsBtnLoading(true);
+        
+        const isVerified = await verifyUser();
+        if (isVerified) {
+          await fetchData();
+          if (followers.includes(currentUserID)) {
+            setFollowed(true);
+          } else {
+            setFollowed(false);
+          }
+        }
+      } catch (error) {
+      } finally {
+        setIsLoading(false);
+        setIsBtnLoading(false);
+        setIsPostsLoading(false);
       }
+    };
 
-      setIsBtnLoading(false);
-      setIsPostsLoading(false);
-    }
     loadData();
 
+    // Set access token if available
     const token = Cookies.get("access_token");
     if (token) {
       setAccessToken(token);
     }
 
     // Real-time update
-    const intervalId = setInterval(async () => {
-      await fetchUserData();
-      await fetchData();
-    }, 1000);
-
+    const intervalId = setInterval(fetchData, 1000);
     return () => clearInterval(intervalId);
-  }, [id, Cookies]);
-
-  const fetchUserData = async() => {
-    const response = await databases.getDocument(
-      appwriteConfig.databaseID,
-      appwriteConfig.userCollectionID,
-      currentUserID
-    );
-
-    if (response.documents) {
-      setCurrentUserID(response.documents[0].$id);
-      setCurrentName(response.documents[0].name);
-      setCurrentUsername(response.documents[0].username);
-      setCurrentProfile(response.documents[0].profile);
-      setCurrentVerified(response.documents[0].verified);
-      setCurrentFollowings(response.documents[0].followings);
-      setCurrentFavorites(response.documents[0].favorites);
-    }
-  }
+  }, [id]);
 
   const fetchData = async() => {
     const response = await databases.listDocuments(
@@ -145,59 +130,64 @@ export default function AccountProfile() {
     );
 
     if (response.documents.length) {
+      const userData = response.documents[0];
       setUserExists(true);
-      setUserID(response.documents[0].$id);
-      setUsername(response.documents[0].username);
-      setEmail(response.documents[0].email);
-      setName(response.documents[0].name);
-      setProfile(response.documents[0].profile);
-      setVerified(response.documents[0].verified);
-      setCover(response.documents[0].cover);
-      setBio(response.documents[0].bio);
-      setFollowers(response.documents[0].followers);
-      setFollowings(response.documents[0].followings);
+      setUserID(userData.$id);
+      setUsername(userData.username);
+      setEmail(userData.email);
+      setName(userData.name);
+      setProfile(userData.profile);
+      setVerified(userData.verified);
+      setCover(userData.cover);
+      setBio(userData.bio);
+      setFollowers(userData.followers || []);
+      setFollowings(userData.followings || []);
 
-      const followerUsers = await fetchUserDetails(response.documents[0].followers);
-      const followingUsers = await fetchUserDetails(response.documents[0].followings);
+      const [followerUsers, followingUsers] = await Promise.all([
+        fetchUserDetails(userData.followers || []),
+        fetchUserDetails(userData.followings || [])
+      ]);
 
       setFollowerDetails(followerUsers);
       setFollowingDetails(followingUsers);
-      setFavors(response.documents[0].favors);
-      setLocation(response.documents[0].location);
-      setWebsite(response.documents[0].website);
-      setJoinDate(response.documents[0].$createdAt);
-      setContactEmail(response.documents[0].contact_email);
-      setPhNo(response.documents[0].contact_phno);
-      setOccupation(response.documents[0].occupation);
-      setBirthday(response.documents[0].birthday);
+      setFavors(userData.favors || []);
+      setLocation(userData.location);
+      setWebsite(userData.website || []);
+      setJoinDate(userData.$createdAt);
+      setContactEmail(userData.contact_email);
+      setPhNo(userData.contact_phno);
+      setOccupation(userData.occupation || []);
+      setBirthday(userData.birthday);
 
-      // Handle posts
-      const postResults = [];
+      // Handle posts with proper error handling
       try {
-        const post = await databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.postCollectionID,
-          [
-            Query.equal('$id', response.documents[0].posts)
-          ]
-        );
-        postResults.push(post);
-      } catch (error) {}
-      setPosts(postResults[0]?.documents?.reverse() || []);
+        if (userData.posts && userData.posts.length > 0) {
+          const postsResponse = await databases.listDocuments(
+            appwriteConfig.databaseID,
+            appwriteConfig.postCollectionID,
+            [Query.equal('$id', userData.posts)]
+          );
+          setPosts(postsResponse.documents.reverse());
+        } else {
+          setPosts([]);
+        }
+      } catch (error) {
+        setPosts([]);
+      }
 
       // Handle reposts and tags in parallel
       const [repostResults, repostUserDetailsMap] = await Promise.all([
         Promise.all(
-          response.documents[0].reposts.map(repostID =>
+          (userData.reposts || []).map(repostID =>
             databases.getDocument(
               appwriteConfig.databaseID,
               appwriteConfig.postCollectionID,
               repostID
-            ).catch(() => null) // Handle errors gracefully
+            ).catch(() => null)
           )
         ),
         Promise.all(
-          response.documents[0].reposts.map(async repostID => {
+          (userData.reposts || []).map(async repostID => {
             try {
               const repost = await databases.getDocument(
                 appwriteConfig.databaseID,
@@ -259,67 +249,61 @@ export default function AccountProfile() {
 
   const verifyUser = async () => {
     try {
-      if (Cookies.get("user_id") == undefined || Cookies.get("email") == undefined || Cookies.get("password") == undefined) {
-        Cookies.remove('user_id');
-        Cookies.remove('email');
-        Cookies.remove('password');
-        Cookies.remove('access_token');
+      // Check for required cookies
+      if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
         setCurrentUsername("");
+        return false;
       }
 
-      if (Cookies.get('email') != undefined) {
-        try {
-          const response = await databases.listDocuments(
-            appwriteConfig.databaseID,
-            appwriteConfig.userCollectionID,
-            [
-              Query.equal('email', Cookies.get('email'))
-            ]
-          );
+      const response = await databases.listDocuments(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        [
+          Query.equal('$id', Cookies.get('user_id'))
+        ]
+      );
 
-          if (response.documents.length) {
-            if (response.documents[0].$id === Cookies.get('user_id') && response.documents[0].email === Cookies.get('email')) {
-              const password = decryptPassword(Cookies.get('password'));
-              bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
-                if (err || !isMatch) {
-                  Cookies.remove('user_id');
-                  Cookies.remove('email');
-                  Cookies.remove('password');
-                  Cookies.remove('access_token');
-                }
-                else if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-                  setCurrentUserID(response.documents[0].$id);
-                  setCurrentName(response.documents[0].name);
-                  setCurrentUsername(response.documents[0].username);
-                  setCurrentProfile(response.documents[0].profile);
-                  setCurrentVerified(response.documents[0].verified);
-                  setCurrentFollowings(response.documents[0].followings);
-                  setCurrentFavorites(response.documents[0].favorites);
+      if (response.documents.length) {
+        const userData = response.documents[0];
+        if (userData.$id === Cookies.get('user_id') && userData.email === Cookies.get('email')) {
+          const password = decryptPassword(Cookies.get('password') || "404");
+          return new Promise((resolve) => {
+            bcrypt.compare(password, userData.password, (err, isMatch) => {
+              if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
+                setCurrentUserID(userData.$id);
+                setCurrentUsername(userData.username);
+                setCurrentName(userData.name);
+                setCurrentProfile(userData.profile);
+                setCurrentVerified(userData.verified);
+                setCurrentFollowings(userData.followings || []);
+                setCurrentFavorites(userData.favorites || []);
 
-                  onMessage(messaging, (payload) => {
-                    toast({
-                      title: "New Notification!",
-                      description: payload.notification.body,
-                      duration: 3000,
+                // Setup notification handling
+                try {
+                  if (messaging) {
+                    onMessage(messaging, (payload) => {
+                      toast({
+                        title: "New Notification!",
+                        description: payload.notification.body,
+                        duration: 3000,
+                      });
                     });
-                  })
+                  }
+                } catch (error) {
                 }
-              });
-            } else {
-              Cookies.remove('user_id');
-              Cookies.remove('email');
-              Cookies.remove('password');
-              Cookies.remove('access_token');
-            }
-          } else {
-            Cookies.remove('user_id');
-            Cookies.remove('email');
-            Cookies.remove('password');
-            Cookies.remove('access_token');
-          }
-        } catch (error) {}
+
+                resolve(true);
+              } else {
+                resolve(false);
+              }
+            });
+          });
+        }
       }
-    } catch (error) {}
+      return false;
+    } catch (error) {
+      return false;
+    }
   };
 
   const refreshPosts = () => {
@@ -526,14 +510,14 @@ export default function AccountProfile() {
       await fetchData();
       toast({ title: "Profile updated successfully" });
     } catch (error) {
-      toast({ title: "Failed to update profile", variant: "destructive" });
+      Cookies.remove('access_token');
+      setAccessToken(undefined)
+      toast({ title: "Failed to update profile", description: "Please sign into Google Drive again.", variant: "destructive" });
     }
   };
 
   const follow = async () => {
     setFollowed(true);
-    await fetchData();
-    await fetchUserData();
     try {
       const [
         notificationID,
@@ -552,7 +536,7 @@ export default function AccountProfile() {
         databases.updateDocument(
           appwriteConfig.databaseID,
           appwriteConfig.userCollectionID,
-          Cookies.get("user_id"),
+          currentUserID,
           {
             followings: [...new Set([user_id, ...currentFollowings])]
           }
@@ -601,8 +585,6 @@ export default function AccountProfile() {
           notifications: [notificationID.$id, ...currentNotifications]
         }
       );
-
-      fetchUserData();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -629,7 +611,7 @@ export default function AccountProfile() {
       await databases.updateDocument(
         appwriteConfig.databaseID,
         appwriteConfig.userCollectionID,
-        Cookies.get("user_id"),
+        currentUserID,
         {
           favorites: [...new Set([user_id, ...currentFavorites])]
         }
@@ -652,8 +634,6 @@ export default function AccountProfile() {
 
   const unfollow = async () => {
     setFollowed(false);
-    await fetchUserData();
-    await fetchData();
     
     await databases.updateDocument(
       appwriteConfig.databaseID,
@@ -672,8 +652,6 @@ export default function AccountProfile() {
         followings: currentFollowings.filter(item => item !== user_id)
       }
     );
-
-    fetchUserData();
   }
 
   const handleUserClick = () => {

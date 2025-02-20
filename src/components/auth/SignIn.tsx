@@ -47,7 +47,6 @@ const SignIn = () => {
           }
         }
       } catch (error) {
-        console.error('Error fetching documents:', error);
       }
     };
 

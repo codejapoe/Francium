@@ -40,22 +40,27 @@ export default function Explore() {
   }
   
   useEffect(() => {
-    setIsLoading(true);
     const verifyUser = async () => {
-      if (Cookies.get('user_id') == undefined || Cookies.get('email') == undefined || Cookies.get('password') == undefined) {
-        handleLogout();
-      } else {
-        try {
-          const response = await databases.listDocuments(
-            appwriteConfig.databaseID,
-            appwriteConfig.userCollectionID,
-            [
-              Query.equal('$id', Cookies.get('user_id'))
-            ]
-          );
+      try {
+        setIsLoading(true);
+        
+        // Check if we have the necessary cookies
+        if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
+          setIsLoading(false);
+          return;
+        }
 
-          if (response.documents.length) {
-            const password = decryptPassword(Cookies.get('password') || "404");
+        const response = await databases.listDocuments(
+          appwriteConfig.databaseID,
+          appwriteConfig.userCollectionID,
+          [
+            Query.equal('$id', Cookies.get('user_id'))
+          ]
+        );
+
+        if (response.documents.length) {
+          const password = decryptPassword(Cookies.get('password') || "404");
+          return new Promise((resolve) => {
             bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
               if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
                 setUserID(response.documents[0].$id);
@@ -63,31 +68,38 @@ export default function Explore() {
                 setName(response.documents[0].name);
                 setProfile(response.documents[0].profile);
                 setVerified(response.documents[0].verified);
-                setIsLoading(false);
 
-                onMessage(messaging, (payload) => {
-                  toast({
-                    title: "New Notification!",
-                    description: payload.notification.body,
-                    duration: 3000,
-                  });
-                })
-              } else if (err || !isMatch) {
-                handleLogout();
+                // Setup notification listener after successful verification
+                try {
+                  if (messaging) {
+                    onMessage(messaging, (payload) => {
+                      toast({
+                        title: "New Notification!",
+                        description: payload.notification.body,
+                        duration: 3000,
+                      });
+                    });
+                  }
+                } catch (error) {
+                  handleLogout();
+                }
+                
+                resolve(true);
+              } else {
+                resolve(false);
               }
             });
-          } else {
-            handleLogout();
-          }
-        } catch (error) {
-          handleLogout();
+          });
         }
+      } catch (error) {
+        handleLogout();
+      } finally {
+        setIsLoading(false);
       }
     };
 
     verifyUser();
-    setIsLoading(false);
-  }, [Cookies]);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {

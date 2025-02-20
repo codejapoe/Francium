@@ -19,60 +19,66 @@ export default function TermsAndConditions() {
     const [profile, setProfile] = useState("");
     const [loading, setLoading] = useState(true);
 
-    const handleRedirect = () => {
-        Cookies.remove('user_id');
-        Cookies.remove('email');
-        Cookies.remove('password');
-        Cookies.remove('access_token');
-    }
-
     useEffect(() => {
-        setLoading(true);
-        verifyUser();
-        setLoading(false);
-      }, [Cookies]);
-    
       const verifyUser = async () => {
-        if (Cookies.get('user_id') == undefined || Cookies.get('email') == undefined || Cookies.get('password') == undefined) {
-          handleRedirect();
-        } else {
-          try {
-            const response = await databases.listDocuments(
-              appwriteConfig.databaseID,
-              appwriteConfig.userCollectionID,
-              [
-                Query.equal('$id', Cookies.get('user_id'))
-              ]
-            );
-    
-            if (response.documents.length) {
-              const password = decryptPassword(Cookies.get('password') || "404");
+        try {
+          setLoading(true);
+          
+          // Check for required cookies
+          if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
+            setUsername("");
+            return false;
+          }
+
+          const response = await databases.listDocuments(
+            appwriteConfig.databaseID,
+            appwriteConfig.userCollectionID,
+            [
+              Query.equal('$id', Cookies.get('user_id'))
+            ]
+          );
+
+          if (response.documents.length) {
+            const password = decryptPassword(Cookies.get('password') || "404");
+            return new Promise((resolve) => {
               bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
                 if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
                   setUsername(response.documents[0].username);
                   setName(response.documents[0].name);
                   setProfile(response.documents[0].profile);
                   setVerified(response.documents[0].verified);
-    
-                  onMessage(messaging, (payload) => {
-                    toast({
-                      title: "New Notification!",
-                      description: payload.notification.body,
-                      duration: 3000,
-                    });
-                  })
-                } else if (err || !isMatch) {
-                  handleRedirect();
+
+                  // Setup notification handling
+                  try {
+                    if (messaging) {
+                      onMessage(messaging, (payload) => {
+                        toast({
+                          title: "New Notification!",
+                          description: payload.notification.body,
+                          duration: 3000,
+                        });
+                      });
+                    }
+                  } catch (error) {
+                  }
+
+                  resolve(true);
+                } else {
+                  resolve(false);
                 }
               });
-            } else {
-              handleRedirect();
-            }
-          } catch (error) {
-            handleRedirect();
+            });
           }
+          return false;
+        } catch (error) {
+          return false;
+        } finally {
+          setLoading(false);
         }
       };
+
+      verifyUser();
+    }, []);
     
       if (loading) {
         return (
