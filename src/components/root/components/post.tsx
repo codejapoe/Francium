@@ -849,7 +849,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
           {files.length === 1 && type === "post" && (
             <AspectRatio ratio={16 / 9}>
               <iframe 
-                src={`${files[0]}?autoplay=1`}
+                src={`${files[0]}`}
                 allow="autoplay; fullscreen" 
                 allowFullScreen 
                 className="w-full h-full rounded-md"
@@ -884,7 +884,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
           )}
           {files && type === "reel" && (
             <AspectRatio ratio={9 / 16}>
-              <iframe src={`${files[0]}?autoplay=1`} allow="autoplay; fullscreen" allowFullScreen className="object-cover w-full h-full"></iframe>
+              <iframe src={`${files[0]}`} allow="autoplay; fullscreen" allowFullScreen className="object-cover w-full h-full"></iframe>
             </AspectRatio>
           )}
         </CardContent>

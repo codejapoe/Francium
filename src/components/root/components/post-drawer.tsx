@@ -570,7 +570,7 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
                   <Label htmlFor="caption" className="text-sm font-medium">
                     Caption
                   </Label>
-                  <Textarea rows={8} placeholder="What's new?" className='mt-2 text-md' onChange={handleCaption}/>
+                  <Textarea rows={8} placeholder="What's new?" className='mt-2 mb-2 text-md' onChange={handleCaption}/>
                   <ToggleGroup className='mt-2' type="single">
                     <ToggleGroupItem value="file">
                       <Dialog>
