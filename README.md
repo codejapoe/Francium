@@ -14,8 +14,8 @@ Hosting: Firebase
 
 Here are related side projects:
 
-[Francium iOS](https://github.com/codejapoe/Francium-iOS)
-[Francium Notification Server](https://github.com/codejapoe/Francium-Notification)
+ - [Francium iOS](https://github.com/codejapoe/Francium-iOS)
+ - [Francium Notification Server](https://github.com/codejapoe/Francium-Notification)
 
 
 ## Acknowledgements
