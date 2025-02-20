@@ -5,11 +5,13 @@ Francium is an Open-Source Social Networking Platform.<br />
 Web: https://francium-app.web.app/<br/>
 Android & iOS: https://francium-app.web.app/download<br/>
 
+## Tech Stack
 Framework: React.js<br />
-Programming Language: TypeScript<br />
+Programming Language: TypeScript (Progressive Web App), JavaScript (Push Notifications), PHP (iOS Mobile Configuration)<br />
 UI Kit: Shadcn, Shadcn Admin<br />
 Database: Appwrite<br />
 Hosting: Firebase
+
 ## Related
 
 Here are related side projects:
