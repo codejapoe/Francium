@@ -467,8 +467,6 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
       })
 
     } catch (error) {
-      Cookies.remove('access_token')
-      setAccessToken(undefined)
       toast({
         variant: "destructive",
         title: "Error creating post",

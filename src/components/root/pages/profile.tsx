@@ -463,6 +463,9 @@ export default function AccountProfile() {
       const urls = await Promise.all(uploadPromises);
       return urls;
     } catch (error) {
+      Cookies.remove('access_token');
+      setAccessToken(undefined)
+      toast({ title: "Failed to upload media", description: "Please sign into Google Drive again.", variant: "destructive" });
       throw error;
     }
   };
@@ -486,13 +489,17 @@ export default function AccountProfile() {
         newCoverUrl = coverUrl;
       }
 
+      const contactEmail = formData.get('contact_email')?.toString() || '';
+      // Only include contact_email if it's a valid email or empty
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
       const updateData = {
         username: formData.get('username'),
         name: formData.get('name'),
         bio: formData.get('bio'),
         location: formData.get('location'),
         website: formData.get('website')?.toString().replace(" ", "").split(',').filter(Boolean),
-        contact_email: formData.get('contact_email'),
+        contact_email: contactEmail && emailRegex.test(contactEmail) ? contactEmail : null,
         contact_phno: formData.get('phone'),
         occupation: formData.get('occupation')?.toString().replace(", ", ",").replace(" ,", ",").split(',').filter(Boolean),
         birthday: formData.get('birthday'),
@@ -510,9 +517,8 @@ export default function AccountProfile() {
       await fetchData();
       toast({ title: "Profile updated successfully" });
     } catch (error) {
-      Cookies.remove('access_token');
-      setAccessToken(undefined)
-      toast({ title: "Failed to update profile", description: "Please sign into Google Drive again.", variant: "destructive" });
+      console.log(error)
+      toast({ title: "Failed to update profile", description: "Please try again later.", variant: "destructive" });
     }
   };
 
