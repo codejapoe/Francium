@@ -33,7 +33,7 @@ import { getCurrentUser, GoogleDriveLogin } from "@/lib/appwrite/api";
 import { formatCount } from "@/lib/functions/count";
 import { fetchUserDetails } from "@/lib/functions/user-functions";
 import NotFoundError from './404';
-import { messaging } from "../../../notifications/firebase.js"
+import { messaging } from "@/notifications/firebase"
 import { onMessage } from "firebase/messaging";
 
 export default function AccountProfile() {

@@ -9,7 +9,7 @@ import FollowSuggestions from '../components/follow-suggestions.js';
 import BottomNav from '../components/bottom-nav.js';
 import { Loader2, Bug, RotateCw } from 'lucide-react';
 import RootLayout from "./layout.js";
-import { messaging } from "../../../notifications/firebase.js"
+import { messaging } from "@/notifications/firebase"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import Post from '../components/post.js'

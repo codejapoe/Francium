@@ -7,15 +7,17 @@ import Trendings from '../components/trendings';
 import { Skeleton } from "@/components/ui/skeleton"
 import FollowSuggestions from '../components/follow-suggestions';
 import BottomNav from '../components/bottom-nav';
-import { Loader2, Bug, Clapperboard, Image, GalleryVertical } from 'lucide-react';
+import { Loader2, Bug, Clapperboard, Image, GalleryVertical, RotateCw } from 'lucide-react';
 import RootLayout from "./layout";
-import { messaging } from "../../../notifications/firebase.js"
+import { messaging } from "@/notifications/firebase"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import Post from '../components/post'
 import { fetchUserDetails } from "@/lib/functions/user-functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { getCurrentUser, Logout } from "@/lib/appwrite/api.js";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "@/components/ui/breadcrumb"
+import { getCurrentUser } from "@/lib/appwrite/api.js";
+import { Button } from "@/components/ui/button";
 
 export default function Explore() {
   const { toast } = useToast();
@@ -151,6 +153,18 @@ export default function Explore() {
             <SideNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
           </aside>
           <main className="w-full lg:w-1/2 pb-16 lg:pb-0">
+            <div className="flex justify-between items-center pb-2">
+              <Breadcrumb>
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>Explore</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+                <Button size="icon" variant="outline" onClick={() => fetchData()}>
+                  <RotateCw className="w-4 h-4" />
+                </Button>
+            </div>
             {/*{ !showTabs ? (*/}
               { isPostLoading ? (
                     <div className="space-y-4 mb-4">

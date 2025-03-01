@@ -6,7 +6,7 @@ import RootLayout from "../pages/layout";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useNavigate, useParams } from 'react-router-dom';
-import { messaging } from "../../../notifications/firebase.js"
+import { messaging } from "@/notifications/firebase"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import { Loader2, User, Wrench, Palette, AppWindow } from 'lucide-react'

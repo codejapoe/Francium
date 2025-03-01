@@ -18,7 +18,7 @@ import 'react-photo-view/dist/react-photo-view.css';
 import RootLayout from "./layout";
 import SideNav from '../components/side-nav';
 import Trendings from '../components/trendings';
-import { messaging } from "../../../notifications/firebase.js"
+import { messaging } from "@/notifications/firebase"
 import { onMessage } from "firebase/messaging";
 import { fetchUserDetails } from "@/lib/functions/user-functions.js";
 import { getCurrentUser } from "@/lib/appwrite/api.js";

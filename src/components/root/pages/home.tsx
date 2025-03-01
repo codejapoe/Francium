@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { account, appwriteConfig, databases } from "@/lib/appwrite/config";
+import { appwriteConfig, databases } from "@/lib/appwrite/config";
 import { Query } from "appwrite";
 import Header from '../components/header';
 import SideNav from '../components/side-nav';
@@ -10,7 +10,7 @@ import FollowSuggestions from '../components/follow-suggestions';
 import BottomNav from '../components/bottom-nav';
 import { Loader2 } from 'lucide-react';
 import RootLayout from "./layout";
-import { generateToken, messaging } from "../../../notifications/firebase.js"
+import { generateToken, messaging } from "@/notifications/firebase"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import { fetchUserDetails } from "@/lib/functions/user-functions.js";
@@ -34,7 +34,9 @@ export default function Home() {
   useEffect(() => {
     verifyUser();
     setIsLoading(false);
+  }, []);
 
+  useEffect(() => {
     const loadPosts = async () => {
       try {
         setIsPostsLoading(true);
@@ -52,7 +54,7 @@ export default function Home() {
     }, 30000);
 
     return () => clearInterval(intervalId);
-  }, []);
+  }, [followings]);
 
   const verifyUser = async () => {
     const response = await getCurrentUser()
@@ -64,14 +66,17 @@ export default function Home() {
       setVerified(response.verified);
       setFollowings(response.followings);
 
-      generateToken(user_id);
-      onMessage(messaging, (payload) => {
-        toast({
-          title: payload.notification.title,
-          description: payload.notification.body,
-          duration: 3000,
+      try {
+        await generateToken(user_id);
+        onMessage(messaging, (payload) => {
+          toast({
+            title: payload.notification.title,
+            description: payload.notification.body,
+            duration: 3000,
+          });
         });
-      });
+      } catch (error) {
+      }
     } else {
       navigate('/explore')
     }
@@ -80,6 +85,11 @@ export default function Home() {
   const fetchPosts = async () => {
     try {
       const allPosts = [];
+
+      if (!followings || followings.length === 0) {
+        setPosts([]);
+        return;
+      }
 
       // Use Promise.all to handle all followings in parallel
       await Promise.all(followings.map(async (uid) => {
@@ -91,9 +101,13 @@ export default function Home() {
           );
 
           // Ensure arrays exist, if not use empty arrays
-          const userPosts = user.posts || [];
-          const userReposts = user.reposts || [];
-          const userTaggedPosts = user.tagged_posts || [];
+          const userPosts = Array.isArray(user.posts) ? user.posts : [];
+          const userReposts = Array.isArray(user.reposts) ? user.reposts : [];
+          const userTaggedPosts = Array.isArray(user.tagged_posts) ? user.tagged_posts : [];
+
+          if (userPosts.length === 0 && userReposts.length === 0 && userTaggedPosts.length === 0) {
+            return;
+          }
 
           // Fetch posts
           const [postsResponse, repostsResponse, tagsResponse] = await Promise.all([
