@@ -611,7 +611,7 @@ export default function AccountProfile() {
       appwriteConfig.userCollectionID,
       user_id,
       {
-        followers: followers.filter(item => item !== user_id)
+        followers: followers.filter(item => item !== currentUserID)
       }
     );
 
