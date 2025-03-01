@@ -490,10 +490,7 @@ export default function AccountProfile() {
   const follow = async () => {
     setFollowed(true);
     try {
-      const [
-        notificationID,
-        userData
-      ] = await Promise.all([
+      await Promise.all([
         // Update followers
         databases.updateDocument(
           appwriteConfig.databaseID,
@@ -511,24 +508,6 @@ export default function AccountProfile() {
           {
             followings: [...new Set([user_id, ...currentFollowings])]
           }
-        ),
-        // Create notification document
-        databases.createDocument(
-          appwriteConfig.databaseID,
-          appwriteConfig.notificationCollectionID,
-          ID.unique(),
-          {
-            user_id: currentUserID,
-            description: currentUsername + " started following you.",
-            action_id: currentUserID,
-            type: "follow",
-          }
-        ),
-        // Get user's current notifications
-        databases.getDocument(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          user_id
         )
       ]);
 
@@ -541,21 +520,11 @@ export default function AccountProfile() {
           },
           body: JSON.stringify({
             username: currentUsername,
-            userID: user_id
+            userID: user_id,
+            userID0: currentUserID
           })
         });
       } catch (error) {}
-
-      // Update notifications array
-      const currentNotifications = userData.notifications || [];
-      await databases.updateDocument(
-        appwriteConfig.databaseID,
-        appwriteConfig.userCollectionID,
-        user_id,
-        {
-          notifications: [notificationID.$id, ...currentNotifications]
-        }
-      );
     } catch (error) {
       toast({
         variant: "destructive",

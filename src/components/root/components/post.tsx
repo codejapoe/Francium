@@ -183,7 +183,8 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
       },
       body: JSON.stringify({
         username: currentUsername,
-        userID: user_id
+        userID: user_id,
+        userID0: currentUserID
       })
     });
 
@@ -329,7 +330,8 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
         },
         body: JSON.stringify({
           username: currentUsername,
-          userID: user_id
+          userID: user_id,
+          userID0: currentUserID
         })
       });
 
@@ -465,7 +467,8 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
       },
       body: JSON.stringify({
         username: currentUsername,
-        userID: user_id
+        userID: user_id,
+        userID0: currentUserID
       })
     });
 

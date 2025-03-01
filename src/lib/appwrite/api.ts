@@ -27,6 +27,8 @@ export async function createUserAccount(user: NewUser) {
         user.name
       )
 
+      await account.createEmailPasswordSession(user.email, user.password);
+
       await databases.createDocument(
         appwriteConfig.databaseID,
         appwriteConfig.userCollectionID,

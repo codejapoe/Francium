@@ -41,7 +41,7 @@ const SignUp = () => {
           navigate("/");
           break;
         case 409:
-          setValError("Account with that email already exists, please sign up");
+          setValError("Account with that email already exists, please sign in");
           break;
         case 422:
           setValError("Username already exists");

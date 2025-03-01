@@ -275,19 +275,6 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
         }
       );
 
-      const notificationID = ID.unique();
-      await databases.createDocument(
-        appwriteConfig.databaseID,
-        appwriteConfig.notificationCollectionID,
-        notificationID,
-        {
-          user_id: user_id,
-          description: username + " created a post.",
-          action_id: postID,
-          type: "post",
-        }
-      );
-
       // Send notification
       try{
         fetch('https://francium-notification.onrender.com/post', {
@@ -297,7 +284,7 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
           },
           body: JSON.stringify({
             username: username,
-            notificationID: notificationID
+            userID: user_id,
           })
         });
       } catch (error) {}
@@ -337,7 +324,8 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
                   },
                   body: JSON.stringify({
                     username: username,
-                    userID: taggedUser.$id
+                    userID: taggedUser.$id,
+                    userID0: user_id
                   })
                 });
               } catch (error) {}
