@@ -43,7 +43,7 @@ export default function Download() {
                     <p className="text-sm text-muted-foreground">Choose your platform</p>
                 </div>
                 <div></div>
-                <Button className="w-full" onClick={() => window.location.href = "https://francium.rf.gd/download.php"}>
+                <Button className="w-full" onClick={() => window.location.href = "https://francium.rf.gd/index.php"}>
                     <FaApple className='h-4 w-4 mr-2'/>
                     iOS
                 </Button>
