@@ -1,5 +1,4 @@
 import React, { useEffect, useRef } from "react";
-import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -9,49 +8,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
-import { FcGoogle } from "react-icons/fc";
 import { SigninVal } from "@/lib/validation";
-import { appwriteConfig, databases } from "@/lib/appwrite/config";
-import { loginUserAccount, GoogleLogin } from "@/lib/appwrite/api";
-import Cookies from "js-cookie";
-import { Query } from "appwrite";
-import bcrypt from "bcryptjs";
-import { decryptPassword } from "@/lib/functions/password-manager";
 import { Link } from "react-router-dom";
+import { loginUserAccount } from "@/lib/appwrite/api";
 
 const SignIn = () => {
   const navigate = useNavigate();
-  
-  useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        let email = Cookies.get('email');
-        let password = Cookies.get('password');
-
-        if (email && password) {
-          password = decryptPassword(password);
-
-          const response = await databases.listDocuments(
-            appwriteConfig.databaseID,
-            appwriteConfig.userCollectionID,
-            [ Query.equal('email', email) ]
-          );
-
-          if (response.documents.length) {
-            bcrypt.compare(decryptPassword(Cookies.get('password')), (await response).documents[0].password, (err, isMatch) => {
-              if (isMatch) {
-                navigate("/");
-              }
-            });
-          }
-        }
-      } catch (error) {
-      }
-    };
-
-    fetchDocuments();
-  }, [Cookies, appwriteConfig, navigate]);
 
   const [isDisabled, setIsDisabled] = React.useState(false);
   const buttonRef = useRef(null);
@@ -91,30 +53,7 @@ const SignIn = () => {
       setIsDisabled(false);
       buttonRef.current.innerHTML = `Sign In`;
     }
-  };  
-
-  interface TokenResponse {
-    access_token: string;
-    token_type: string;
-    scope: string;
-    expires_in: number;
-  }
-
-  const GoogleAuth = useGoogleLogin({
-    onSuccess: async (tokenResponse: TokenResponse) => {
-      try {
-        const res = await GoogleLogin(tokenResponse);
-        if (res === 200) {
-          navigate("/");
-        } else {
-          setValError("Cannot authenticate with Google. Please sign in manually.");
-        }
-      } catch (error) {
-        setValError(`Error: ${error.message}`);
-      }
-    },
-    onError: () => setValError("Google login failed. Please try again."),
-  });
+  };
 
   const handleSignUp = () => {
     navigate("/sign-up");
@@ -188,28 +127,6 @@ const SignIn = () => {
                 </button>
               </div>
             </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-              <Button
-                variant="outline"
-                onClick={() => GoogleAuth()}
-                className="w-full"
-              >
-                <FcGoogle className="h-4 w-4 mr-2" />
-                <span>Google</span>
-              </Button>
-            </GoogleOAuthProvider>
 
             <p className='px-8 text-center text-sm text-muted-foreground'>
             By signing in, you agree to our{' '}

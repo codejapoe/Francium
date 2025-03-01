@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import Cookies from "js-cookie";
 import { Search, CircleUser, Settings, UserCheck, Star, Bookmark, BadgeCheck, Trash2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,13 +11,14 @@ import { useState } from 'react';
 import { useScrollDirection } from '@/lib/hooks/useScrollDirection';
 import { useNavigate } from 'react-router-dom';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Logout } from '@/lib/appwrite/api';
 
 interface HeaderInfo {
   activeTab: string,
   username: string,
   name: string,
   profile: string,
-  verified: boolean,
+  verified: boolean
 }
 
 export default function Header({ activeTab="followings", username, name, profile, verified=false }: HeaderInfo) {
@@ -46,10 +46,7 @@ export default function Header({ activeTab="followings", username, name, profile
   };
 
   const signout = () => {
-    Cookies.remove('user_id');
-    Cookies.remove('email');
-    Cookies.remove('password');
-    Cookies.remove('access_token');
+    Logout();
     navigate('/sign-in');
     return;
   }
@@ -102,7 +99,7 @@ export default function Header({ activeTab="followings", username, name, profile
               </DropdownMenu>
             </div>
           )}
-          { Cookies.get('email') == undefined ? (
+          { username == undefined ? (
             <div className="flex items-center lg:hidden gap-2">
               <Link to='/sign-in'>
                 <Button variant="outline">
@@ -208,7 +205,7 @@ export default function Header({ activeTab="followings", username, name, profile
         </div>
 
         {/* Tabs (Desktop View) */}
-        { activeTab !== "#" && Cookies.get('email') != undefined && (
+        { activeTab !== "#" && username != undefined && (
           <Tabs defaultValue={activeTab} className="hidden lg:block w-[400px]">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="followings" onClick={() => navigate('/')}>
@@ -224,7 +221,7 @@ export default function Header({ activeTab="followings", username, name, profile
         )}
 
         {/* Desktop Search and Profile */}
-        { Cookies.get('email') == undefined ? (
+        { username == undefined ? (
           <div className="hidden lg:flex items-center gap-4">
             <Link to='/sign-in'>
               <Button variant="outline">

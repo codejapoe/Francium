@@ -13,12 +13,13 @@ import FollowSuggestions from '../components/follow-suggestions';
 import BottomNav from '../components/bottom-nav';
 import { Loader2 } from 'lucide-react';
 import RootLayout from "./layout";
-import { generateToken, messaging } from "../../../notifications/firebase.js"
+import { messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import { fetchUserDetails } from "@/lib/functions/user-functions.js";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Bug } from 'lucide-react';
+import { getCurrentUser } from "@/lib/appwrite/api.js";
 
 export default function Favorite() {
   const { toast } = useToast();
@@ -34,95 +35,53 @@ export default function Favorite() {
   const [isPostsLoading, setIsPostsLoading] = useState(true);
 
   useEffect(() => {
-    const initializeApp = async () => {
+    setIsLoading(true);
+    verifyUser();
+    setIsLoading(false);
+
+    const loadPosts = async () => {
       try {
-        setIsLoading(true);
         setIsPostsLoading(true);
-        const isVerified = await verifyUser();
-        
-        // Only fetch posts if user verification was successful
-        if (isVerified) {
-          await fetchPosts();
-        }
+        await fetchPosts();
       } catch (error) {
       } finally {
         setIsPostsLoading(false);
-        setIsLoading(false);
       }
-    };
-
-    // Check if we have the necessary cookies before initializing
-    if (Cookies.get('user_id') && Cookies.get('email') && Cookies.get('password')) {
-      initializeApp();
-    } else {
-      setIsLoading(false);
-      setIsPostsLoading(false);
-    }
-  }, []);
-  
-  useEffect(() => {
-    const loadPosts = async () => {
-      setIsPostsLoading(true);
-      await fetchPosts();
-      setIsPostsLoading(false);
     };
   
     if (favorites.length > 0) {
       loadPosts();
     }
+
+    const intervalId = setInterval(async () => {
+      await fetchPosts();
+    }, 30000);
+
+    return () => clearInterval(intervalId);
   }, [favorites]);
 
   const verifyUser = async () => {
-    if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
-      return false;
-    }
+    setIsLoading(true);
+    
+    const response = await getCurrentUser()
+    if (response.$id) {
+      setUserID(response.$id);
+      setUsername(response.username);
+      setName(response.name);
+      setProfile(response.profile);
+      setVerified(response.verified);
+      setFavorites(response.followings);
 
-    try {
-      const response = await databases.listDocuments(
-        appwriteConfig.databaseID,
-        appwriteConfig.userCollectionID,
-        [
-          Query.equal('$id', Cookies.get('user_id'))
-        ]
-      );
-
-      if (response.documents.length) {
-        const password = decryptPassword(Cookies.get('password') || "404");
-        return new Promise((resolve) => {
-          bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
-            if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-              setUserID(response.documents[0].$id);
-              setUsername(response.documents[0].username);
-              setName(response.documents[0].name);
-              setProfile(response.documents[0].profile);
-              setVerified(response.documents[0].verified);
-              setFavorites(response.documents[0].favorites || []);
-
-              // Setup notification handling
-              try {
-                generateToken();
-                if (messaging) {
-                  onMessage(messaging, (payload) => {
-                    toast({
-                      title: "New Notification!",
-                      description: payload.notification.body,
-                      duration: 3000,
-                    });
-                  });
-                }
-              } catch (error) {
-              }
-
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          });
+      onMessage(messaging, (payload) => {
+        toast({
+          title: payload.notification.title,
+          description: payload.notification.body,
+          duration: 3000,
         });
-      }
-      return false;
-    } catch (error) {
-      return false;
+      });
+      setIsLoading(false);
+    } else {
+      navigate("/sign-in");
     }
   };
 
@@ -232,7 +191,7 @@ export default function Favorite() {
         <Header activeTab="favorites" username={username} name={name} profile={profile} verified={verified}/>
         <div className="container mx-auto px-4 py-8 flex gap-8">
           <aside className="hidden lg:block w-1/4 sticky top-20 self-start">
-            <SideNav username={username} name={name} profile={profile} verified={verified}/>
+            <SideNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
           </aside>
           <main className="w-full lg:w-1/2 pb-16 lg:pb-0">
           { isPostsLoading ? (
@@ -310,7 +269,7 @@ export default function Favorite() {
             </div>
           </aside>
         </div>
-        <BottomNav username={username} name={name} profile={profile} verified={verified}/>
+        <BottomNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
       </div>
     </RootLayout>
   );

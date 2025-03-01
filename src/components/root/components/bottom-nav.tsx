@@ -14,9 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getRelativeTime } from '@/lib/functions/count';
 
-export default function BottomNav({ username, name, profile, verified }) {
+export default function BottomNav({ user_id, username, name, profile, verified }) {
   const location = useLocation();
-  const user_id = Cookies.get('user_id');
   const [notifications, setNotifications] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -109,7 +108,7 @@ export default function BottomNav({ username, name, profile, verified }) {
       <div className="flex justify-around items-center h-14">
         {navItems.map((item) => (
           item.label === 'Post' ? (
-            <PostDrawer username={username} name={name} profile={profile} verified={verified} />
+            <PostDrawer user_id={user_id} username={username} name={name} profile={profile} verified={verified} />
           ) : item.label === 'Notifications' ? (
             <Sheet key={item.label} open={isNotificationOpen} onOpenChange={setIsNotificationOpen}>
               <SheetTrigger asChild className='space-y-0'>
@@ -121,7 +120,7 @@ export default function BottomNav({ username, name, profile, verified }) {
                   <item.icon className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="bottom">
+              <SheetContent className='h-[80vh]' side="bottom">
                 <SheetHeader>
                   <SheetTitle>Notifications</SheetTitle>
                 </SheetHeader>

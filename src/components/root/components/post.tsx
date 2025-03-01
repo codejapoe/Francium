@@ -59,7 +59,7 @@ interface PostProps {
 }
 
 export default function Post({ currentUserID, currentUsername, id, user_id, name, username, profile, isVerified = false, timestamp, caption, type, files, location, hashtags, tagged_people, likes, comments, reposts, repost_user_data=null, tagged_user_data=null }: PostProps) {
-  const userID = Cookies.get('user_id');
+  const userID = currentUserID;
   const { toast } = useToast()
   const [isLiked, setIsLiked] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -804,7 +804,7 @@ export default function Post({ currentUserID, currentUsername, id, user_id, name
                   <Info className="w-4 h-4 mr-2" />
                   Show info
                 </DropdownMenuItem>
-                { userID === user_id || Cookies.get('user_id') === '679ffab900354e87a95f' || Cookies.get('user_id') === '677529e00000cdcfe556' ? (
+                { userID === user_id || username === 'codejapoe' || username === 'francium' ? (
                   <DropdownMenuItem className="text-red-600 focus:text-red-700" onClick={deletePost}>
                     <Trash2 className="w-4 h-4 mr-2" />
                     Delete post

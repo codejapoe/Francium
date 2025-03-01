@@ -1,26 +1,12 @@
 import { ID, Query } from "appwrite"
 import { NewUser, ExistingUser } from "@/types";
-import { appwriteConfig, databases } from "./config";
+import { account, appwriteConfig, databases } from "./config";
 import Cookies from "js-cookie";
 import axios from "axios";
-import bcrypt from "bcryptjs";
 import { isEmail } from "../functions/email-validation";
-import { hashPassword, encryptPassword } from "../functions/password-manager";
 
 export async function createUserAccount(user: NewUser) {
   try {
-    let emailResponse = await databases.listDocuments(
-      appwriteConfig.databaseID,
-      appwriteConfig.userCollectionID,
-      [
-        Query.equal('email', user.email)
-      ]
-    );
-
-    if (emailResponse.total > 0) {
-      return 409;
-    }
-
     let usernameResponse = await databases.listDocuments(
       appwriteConfig.databaseID,
       appwriteConfig.userCollectionID,
@@ -33,25 +19,30 @@ export async function createUserAccount(user: NewUser) {
       return 422;
     }
 
-    const user_id = ID.unique();
-    await databases.createDocument(
-      appwriteConfig.databaseID,
-      appwriteConfig.userCollectionID,
-      user_id,
-      {
-        name: user.name,
-        email: user.email,
-        username: user.username,
-        password: hashPassword(user.password),
-      }
-    );
+    try {
+      const newAccount = await account.create(
+        ID.unique(),
+        user.email,
+        user.password,
+        user.name
+      )
 
-    Cookies.set('user_id', user_id, { expires: 365 });
-    Cookies.set('email', user.email, { expires: 365 });
-    Cookies.set('password', encryptPassword(user.password), { expires: 365 });
+      await databases.createDocument(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        ID.unique(),
+        {
+          account_id: newAccount.$id,
+          name: newAccount.name,
+          email: newAccount.email,
+          username: user.username,
+        }
+      );
 
-    return 200;
-
+      return 200;
+    } catch (error) {
+      return 409;
+    }
   } catch (error) {
     return 500;
   }
@@ -68,17 +59,23 @@ export async function loginUserAccount(user: ExistingUser) {
       [Query.equal(searchField, searchValue)]
     );
 
-    if (response.total === 1) {
-      const document = response.documents[0];
-      const isMatch = await bcrypt.compare(user.password, document.password);
+    if (response.total > 0) {
+      try {
+        const result = await account.createEmailPasswordSession(response.documents[0].email, user.password)
 
-      if (isMatch) {
-        Cookies.set("user_id", document.$id, { expires: 365 });
-        Cookies.set("email", document.email, { expires: 365 });
-        Cookies.set("password", encryptPassword(user.password), { expires: 365 });
+        if (response.documents[0].account_id !== result.userId) {
+          await databases.updateDocument(
+            appwriteConfig.databaseID,
+            appwriteConfig.userCollectionID,
+            response.documents[0].$id,
+            {
+              account_id: result.userId
+            }
+          );
+        }
 
         return 200;
-      } else {
+      } catch (error) {
         return 401;
       }
     }
@@ -89,9 +86,9 @@ export async function loginUserAccount(user: ExistingUser) {
   }
 }
 
-export async function GoogleLogin(response) {
+export async function GoogleDriveLogin(response) {
   try {
-    const res = await axios.get(
+    await axios.get(
       "https://www.googleapis.com/oauth2/v3/userinfo",
       {
         headers: {
@@ -100,45 +97,7 @@ export async function GoogleLogin(response) {
       }
     );
 
-    Cookies.set('email', res.data.email, { expires: 365 });
-    Cookies.set('password', encryptPassword(import.meta.env.VITE_GOOGLE_PASSWORD), { expires: 365 });
-    Cookies.set('access_token', response.access_token, { expires: 365 });
-  
-    if (res.status === 200) {
-      const responseData = databases.listDocuments(
-        appwriteConfig.databaseID,
-        appwriteConfig.userCollectionID,
-        [
-          Query.equal('email', res.data.email)
-        ]
-      );
-  
-      let user_id = ID.unique();
-      if ((await responseData).total === 0) {
-        const username = res.data.name.replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "-").toLowerCase();
-
-
-        await databases.createDocument(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          user_id,
-          {
-            name: res.data.name,
-            email: res.data.email,
-            username: username,
-            password: hashPassword(import.meta.env.VITE_GOOGLE_PASSWORD),
-            profile: res.data.picture.replace("s96-c", "s800-c"),
-            access_token: response.access_token
-          }
-        );
-
-      } else {
-        // Existing user
-        user_id = (await responseData).documents[0].$id;
-      }
-      
-      Cookies.set('user_id', user_id, { expires: 365 });
-    }
+    Cookies.set('access_token', response.access_token, { expires: 1/24 });
     
     return 200;
   } catch (error) {
@@ -146,40 +105,54 @@ export async function GoogleLogin(response) {
   }
 }
 
-export async function GoogleDriveLogin(response) {
+export async function getCurrentUser() {
   try {
-    const res = await axios.get(
-      "https://www.googleapis.com/oauth2/v3/userinfo",
-      {
-        headers: {
-          Authorization: `${response.token_type} ${response.access_token}`,
-        }
-      }
+    const currentAccount = await account.getSession('current');
+    if (!currentAccount) {
+      throw new Error('No session found');
+    }
+
+    const currentUser = await databases.listDocuments(
+      appwriteConfig.databaseID,
+      appwriteConfig.userCollectionID,
+      [Query.equal('email', currentAccount.providerUid)]
     );
 
-    Cookies.set('access_token', response.access_token, { expires: 365 });
-  
-    if (res.status === 200) {
-      const responseData = databases.listDocuments(
+    if (currentUser.documents.length === 0) {
+      throw new Error('No user document found');
+    }
+
+    if (currentUser.documents[0].account_id !== currentAccount.userId) {
+      const currentUser2 = await databases.updateDocument(
         appwriteConfig.databaseID,
         appwriteConfig.userCollectionID,
-        [
-          Query.equal('email', res.data.email)
-        ]
+        currentUser.documents[0].account_id,
+        {
+          account_id: currentAccount.userId
+        }
       );
-  
-      if ((await responseData).total === 1) {
-        const user = await databases.updateDocument(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          (await responseData).documents[0].$id,
-          {
-            access_token: response.access_token
-          }
-        );
-      }
+      return currentUser2;
     }
-    
+
+    return currentUser.documents[0];
+  } catch (error) {
+    return { 
+      "$id": undefined,
+      "name": undefined,
+      "email": undefined,
+      "username": undefined,
+      "profile": undefined,
+      "verified": undefined,
+      "followings": undefined,
+      "favorites": undefined,
+      "bookmarks": undefined
+    };
+  }
+}
+
+export async function Logout() {
+  try {
+    await account.deleteSession('current');
     return 200;
   } catch (error) {
     return 500;

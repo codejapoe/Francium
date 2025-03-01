@@ -29,11 +29,11 @@ import { PhotoProvider, PhotoView } from 'react-photo-view';
 import 'react-photo-view/dist/react-photo-view.css';
 import RootLayout from "./layout";
 import { FaGoogleDrive } from "react-icons/fa";
-import { GoogleDriveLogin } from "@/lib/appwrite/api";
+import { getCurrentUser, GoogleDriveLogin } from "@/lib/appwrite/api";
 import { formatCount } from "@/lib/functions/count";
 import { fetchUserDetails } from "@/lib/functions/user-functions";
 import NotFoundError from './404';
-import { generateToken, messaging } from "../../../notifications/firebase.js"
+import { messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 
 export default function AccountProfile() {
@@ -90,18 +90,16 @@ export default function AccountProfile() {
         setIsPostsLoading(true);
         setIsBtnLoading(true);
         
-        const isVerified = await verifyUser();
-        if (isVerified) {
-          await fetchData();
-          if (followers.includes(currentUserID)) {
-            setFollowed(true);
-          } else {
-            setFollowed(false);
-          }
-        }
-      } catch (error) {
-      } finally {
+        await verifyUser();
         setIsLoading(false);
+
+        await fetchData();
+        if (followers.includes(currentUserID)) {
+          setFollowed(true);
+        } else {
+          setFollowed(false);
+        }
+      } finally {
         setIsBtnLoading(false);
         setIsPostsLoading(false);
       }
@@ -254,62 +252,23 @@ export default function AccountProfile() {
   }
 
   const verifyUser = async () => {
-    try {
-      // Check for required cookies
-      if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
-        setCurrentUsername("");
-        return false;
-      }
+    const response = await getCurrentUser();
+    if (response.$id) {
+      setCurrentUserID(response.$id);
+      setCurrentUsername(response.username);
+      setCurrentName(response.name);
+      setCurrentProfile(response.profile);
+      setCurrentVerified(response.verified);
+      setCurrentFollowings(response.followings);
+      setCurrentFavorites(response.favorites);
 
-      const response = await databases.listDocuments(
-        appwriteConfig.databaseID,
-        appwriteConfig.userCollectionID,
-        [
-          Query.equal('$id', Cookies.get('user_id'))
-        ]
-      );
-
-      if (response.documents.length) {
-        const userData = response.documents[0];
-        if (userData.$id === Cookies.get('user_id') && userData.email === Cookies.get('email')) {
-          const password = decryptPassword(Cookies.get('password') || "404");
-          return new Promise((resolve) => {
-            bcrypt.compare(password, userData.password, (err, isMatch) => {
-              if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-                setCurrentUserID(userData.$id);
-                setCurrentUsername(userData.username);
-                setCurrentName(userData.name);
-                setCurrentProfile(userData.profile);
-                setCurrentVerified(userData.verified);
-                setCurrentFollowings(userData.followings || []);
-                setCurrentFavorites(userData.favorites || []);
-
-                // Setup notification handling
-                try {
-                  generateToken();
-                  if (messaging) {
-                    onMessage(messaging, (payload) => {
-                      toast({
-                        title: "New Notification!",
-                        description: payload.notification.body,
-                        duration: 3000,
-                      });
-                    });
-                  }
-                } catch (error) {
-                }
-
-                resolve(true);
-              } else {
-                resolve(false);
-              }
-            });
-          });
-        }
-      }
-      return false;
-    } catch (error) {
-      return false;
+      onMessage(messaging, (payload) => {
+        toast({
+          title: payload.notification.title,
+          description: payload.notification.body,
+          duration: 3000,
+        });
+      });
     }
   };
 
@@ -517,14 +476,13 @@ export default function AccountProfile() {
       await databases.updateDocument(
         appwriteConfig.databaseID,
         appwriteConfig.userCollectionID,
-        Cookies.get("user_id"),
+        user_id,
         updateData
       );
       
       await fetchData();
       toast({ title: "Profile updated successfully" });
     } catch (error) {
-      console.log(error)
       toast({ title: "Failed to update profile", description: "Please try again later.", variant: "destructive" });
     }
   };
@@ -653,14 +611,14 @@ export default function AccountProfile() {
       appwriteConfig.userCollectionID,
       user_id,
       {
-        followers: followers.filter(item => item !== Cookies.get("user_id"))
+        followers: followers.filter(item => item !== user_id)
       }
     );
 
     await databases.updateDocument(
       appwriteConfig.databaseID,
       appwriteConfig.userCollectionID,
-      Cookies.get("user_id"),
+      user_id,
       {
         followings: currentFollowings.filter(item => item !== user_id)
       }
@@ -745,7 +703,7 @@ export default function AccountProfile() {
             </div>
             
             <div className="hidden lg:flex items-end gap-2">
-              { Cookies.get('email') != undefined ? (
+              { username != undefined ? (
                 isBtnLoading ? (
                   <Button className="gap-2" disabled>
                     <Loader2 className="animate-spin" />
@@ -944,7 +902,7 @@ export default function AccountProfile() {
             </div>
           </div>
           <div className="mt-4 flex lg:hidden gap-2">
-            { Cookies.get('email') == undefined ? (
+            { username == undefined ? (
               <Link to='/sign-in' className="w-full">
                 <Button className="w-full">
                   <UserPlus className="w-4 h-4 mr-2" />
@@ -1473,7 +1431,7 @@ export default function AccountProfile() {
                 </div>
               </aside>
           </div>
-          <BottomNav username={currentUsername} name={currentName} profile={currentProfile} verified={currentVerified}/>
+          <BottomNav user_id={user_id} username={currentUsername} name={currentName} profile={currentProfile} verified={currentVerified}/>
       </div>
     </RootLayout>
   )

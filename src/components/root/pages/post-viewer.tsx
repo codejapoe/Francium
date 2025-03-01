@@ -18,9 +18,10 @@ import 'react-photo-view/dist/react-photo-view.css';
 import RootLayout from "./layout";
 import SideNav from '../components/side-nav';
 import Trendings from '../components/trendings';
-import { generateToken, messaging } from "../../../notifications/firebase.js"
+import { messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { fetchUserDetails } from "@/lib/functions/user-functions.js";
+import { getCurrentUser } from "@/lib/appwrite/api.js";
 
 export default function PostViewer() {
 const navigate = useNavigate();
@@ -80,10 +81,8 @@ const navigate = useNavigate();
       try {
         setIsLoading(true);
         setIsPostLoading(true);
-        const isVerified = await verifyUser();
-        if (isVerified) {
-          await fetchData();
-        }
+        await verifyUser();
+        await fetchData();
       } catch (error) {
       } finally {
         setIsPostLoading(false);
@@ -93,7 +92,7 @@ const navigate = useNavigate();
 
     loadData();
 
-    const intervalId = setInterval(fetchData, 1000);
+    const intervalId = setInterval(fetchData, 5000);
     return () => clearInterval(intervalId);
   }, [id]);
 
@@ -135,58 +134,26 @@ const navigate = useNavigate();
   }
 
   const verifyUser = async () => {
-    try {
-      // Check for required cookies
-      if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
-        setUsername("");
-        return false;
-      }
+    setIsLoading(true);
+    
+    const response = await getCurrentUser();
+    if (response.$id) {
+      setUserID(response.$id);
+      setUsername(response.username);
+      setName(response.name);
+      setProfile(response.profile);
+      setVerified(response.verified);
 
-      const response = await databases.listDocuments(
-        appwriteConfig.databaseID,
-        appwriteConfig.userCollectionID,
-        [
-          Query.equal('$id', Cookies.get('user_id'))
-        ]
-      );
-
-      if (response.documents.length) {
-        const password = decryptPassword(Cookies.get('password') || "404");
-        return new Promise((resolve) => {
-          bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
-            if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-              setUserID(response.documents[0].$id);
-              setUsername(response.documents[0].username);
-              setName(response.documents[0].name);
-              setProfile(response.documents[0].profile);
-              setVerified(response.documents[0].verified);
-
-              // Setup notification handling
-              try {
-                generateToken();
-                if (messaging) {
-                  onMessage(messaging, (payload) => {
-                    toast({
-                      title: "New Notification!",
-                      description: payload.notification.body,
-                      duration: 3000,
-                    });
-                  });
-                }
-              } catch (error) {
-              }
-
-              resolve(true);
-            } else {
-              resolve(false);
-            }
-          });
+      onMessage(messaging, (payload) => {
+        toast({
+          title: payload.notification.title,
+          description: payload.notification.body,
+          duration: 3000,
         });
-      }
-      return false;
-    } catch (error) {
-      return false;
+      });
     }
+
+    setIsLoading(false);
   };
 
   const refreshPosts = () => {
@@ -214,7 +181,7 @@ const navigate = useNavigate();
 
           <div className="container mx-auto px-4 py-2 flex gap-8">
               <aside className="hidden lg:block w-1/4 sticky top-20 mt-4 mb-4 self-start">
-                <SideNav username={username} name={name} profile={profile} verified={verified}/>
+                <SideNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
               </aside>
               <main className="w-full lg:w-1/2 pb-16 lg:pb-0">
                 <div className="flex justify-between items-center pb-2">
@@ -292,7 +259,7 @@ const navigate = useNavigate();
                 </div>
               </aside>
           </div>
-          <BottomNav username={username} name={name} profile={profile} verified={verified}/>
+          <BottomNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
       </div>
     </RootLayout>
   )

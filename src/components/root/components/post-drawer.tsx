@@ -19,18 +19,18 @@ import { GoogleDriveLogin } from "@/lib/appwrite/api";
 import { appwriteConfig, databases } from "@/lib/appwrite/config";
 
 interface PostDialogueProps {
+  user_id: string,
   username: string,
   name: string,
   profile: string,
   verified: boolean
 }
 
-export default function PostDrawer({ username, name, profile, verified }: PostDialogueProps ) {
+export default function PostDrawer({ user_id, username, name, profile, verified }: PostDialogueProps ) {
   const { toast } = useToast()
   const [isPostDrawerOpen, setPostDrawerOpen] = useState(false);
   const [accessToken, setAccessToken] = useState(null);
   const [activeTab, setActiveTab] = useState("post");
-  const user_id = Cookies.get('user_id') || null;
   const [files, setFiles] = useState<File[]>([]);
   let fileLinks = [];
   const [caption, setCaption] = useState("");
@@ -40,39 +40,19 @@ export default function PostDrawer({ username, name, profile, verified }: PostDi
 
   useEffect(() => {
     if (isPostDrawerOpen) {
-      if (verifyGoogleToken(Cookies.get("access_token"))) {
+      if (Cookies.get("access_token")) {
         setAccessToken(Cookies.get("access_token"))
       } else {
-        Cookies.remove("access_token")
         setAccessToken(undefined)
         toast({
           variant: "destructive",
-          title: "Unable to sign into Google Drive",
+          title: "Google Drive token expired",
           description: "Please sign in again.",
           duration: 3000
         })
       }
     }
   }, [Cookies, isPostDrawerOpen]);
-  
-  const verifyGoogleToken = async (token: string): Promise<boolean> => {
-    try {
-      const response = await fetch('https://www.googleapis.com/oauth2/v3/tokeninfo', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        return !data.error && data.exp > Date.now() / 1000;
-      }
-      return false;
-    } catch (error) {
-      return false;
-    }
-  };
   
   interface TokenResponse {
     access_token: string;

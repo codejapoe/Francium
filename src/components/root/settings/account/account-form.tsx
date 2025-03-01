@@ -7,43 +7,35 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input'
 import { appwriteConfig, databases } from "@/lib/appwrite/config";
 import Cookies from 'js-cookie';
-import { Query } from 'appwrite';
 import { Label } from '@/components/ui/label';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import bcrypt from 'bcryptjs';
-import { hashPassword, encryptPassword } from '@/lib/functions/password-manager';
 import { useState } from 'react';
+import { Logout } from '@/lib/appwrite/api';
 
 interface SettingsAccountProps {
   user_id: string;
-  password: string;
 }
 
 const accountFormSchema = z.object({
-    password: z
-      .string()
-      .max(20, {
-        message: 'Old password must not be longer than 20 characters.',
-    }),
-    newPassword: z
-        .string()
-        .min(8, {
-            message: "New password must be at least 8 characters."
-        })
-        .max(20, {
-            message: "New password must be less than 20 characters."
-    }),
+  newPassword: z
+    .string()
+    .min(8, {
+        message: "New password must be at least 8 characters."
+    })
+    .max(20, {
+        message: "New password must be less than 20 characters."
+  }),
 })
 
 type accountFormValues = z.infer<typeof accountFormSchema>
 
-export default function AccountForm({user_id, password}: SettingsAccountProps) {
+export default function AccountForm({user_id}: SettingsAccountProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  /*
   const [isPasswordIncorrect, setIsPasswordIncorrect] = useState(false);
   const defaultValues: Partial<accountFormValues> = {
-    password: '',
     newPassword: ''
   }
   const form = useForm<accountFormValues>({
@@ -99,17 +91,24 @@ export default function AccountForm({user_id, password}: SettingsAccountProps) {
         variant: "destructive",
       });
     }
-  }
+  }*/
 
   const handleSignOut = () => {
-    Cookies.remove('user_id');
-    Cookies.remove('email');
-    Cookies.remove('password');
-    Cookies.remove('access_token');
+    Logout();
     navigate("/explore");
   }
 
   return (
+    <div className='mt-8 space-y-4'>
+      <Label className='text-md'>Actions</Label><br/>
+      <Button variant='destructive' onClick={() => handleSignOut()}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Sign out
+      </Button>
+    </div>
+  )
+}
+    {/*
     <Form {...form}>
       <Label className='text-md'>Change Password</Label>
       <form onSubmit={form.handleSubmit(onSubmit)} className='mt-4 space-y-4'>
@@ -150,13 +149,4 @@ export default function AccountForm({user_id, password}: SettingsAccountProps) {
         />
         <Button type='submit'>Update password</Button>
       </form>
-      <div className='mt-8 space-y-4'>
-        <Label className='text-md'>Actions</Label><br/>
-        <Button variant='destructive' onClick={() => handleSignOut()}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Sign out
-        </Button>
-      </div>
-    </Form>
-  )
-}
+    </Form>*/}

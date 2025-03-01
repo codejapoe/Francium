@@ -16,8 +16,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { getRelativeTime } from '@/lib/functions/count';
 
-export default function SideNav({ username, name, profile, verified }) {
-  const user_id = Cookies.get('user_id');
+export default function SideNav({ user_id, username, name, profile, verified }) {
+  const access_token = Cookies.get('access_token');
   const [notifications, setNotifications] = useState([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -249,7 +249,7 @@ export default function SideNav({ username, name, profile, verified }) {
           </Link>
         )
       ))}
-      <PostDrawer username={username} name={name} profile={profile} verified={verified} />
+      <PostDrawer user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
     </nav>
   )
 }

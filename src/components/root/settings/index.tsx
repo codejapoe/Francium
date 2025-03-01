@@ -6,18 +6,15 @@ import RootLayout from "../pages/layout";
 import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useNavigate, useParams } from 'react-router-dom';
-import { appwriteConfig, databases } from "@/lib/appwrite/config";
-import { Query } from 'appwrite';
 import { messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
-import bcrypt from "bcryptjs";
-import { decryptPassword } from "@/lib/functions/password-manager";
 import { Loader2, User, Wrench, Palette, AppWindow } from 'lucide-react'
 import SettingsAccount from './account/index.js';
 import SettingsAppearance from './appearance/index.js';
 import SettingsDisplay from './display/index.js';
 import SettingsProfile from './profile/index.js';
+import { getCurrentUser, Logout } from '@/lib/appwrite/api.js';
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -26,7 +23,6 @@ export default function Settings() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
   const [verified, setVerified] = useState(false);
   const [profile, setProfile] = useState("");
   const [loading, setLoading] = useState(true);
@@ -55,10 +51,7 @@ export default function Settings() {
   ]
 
   const handleRedirect = () => {
-    Cookies.remove('user_id');
-    Cookies.remove('email');
-    Cookies.remove('password');
-    Cookies.remove('access_token');
+    Logout();
     navigate("/settings/appearance");
   }
 
@@ -69,47 +62,22 @@ export default function Settings() {
   }, [Cookies]);
 
   const verifyUser = async () => {
-    if (Cookies.get('user_id') == undefined || Cookies.get('email') == undefined || Cookies.get('password') == undefined) {
-      handleRedirect();
-    } else {
-      try {
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [
-            Query.equal('$id', Cookies.get('user_id'))
-          ]
-        );
+    const response = await getCurrentUser();
+    if (response.$id) {
+      setUserID(response.$id);
+      setEmail(response.email);
+      setUsername(response.username);
+      setName(response.name);
+      setProfile(response.profile);
+      setVerified(response.verified);
 
-        if (response.documents.length) {
-          const password = decryptPassword(Cookies.get('password') || "404");
-          bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
-            if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-              setUserID(response.documents[0].$id);
-              setUsername(response.documents[0].username);
-              setName(response.documents[0].name);
-              setEmail(response.documents[0].email);
-              setPassword(response.documents[0].password);
-              setProfile(response.documents[0].profile);
-              setVerified(response.documents[0].verified);
-
-              onMessage(messaging, (payload) => {
-                toast({
-                  title: "New Notification!",
-                  description: payload.notification.body,
-                  duration: 3000,
-                });
-              })
-            } else if (err || !isMatch) {
-              handleRedirect();
-            }
-          });
-        } else {
-          handleRedirect();
-        }
-      } catch (error) {
-        handleRedirect();
-      }
+      onMessage(messaging, (payload) => {
+        toast({
+          title: payload.notification.title,
+          description: payload.notification.body,
+          duration: 3000,
+        });
+      });
     }
   };
 
@@ -142,7 +110,7 @@ export default function Settings() {
           </aside>
           <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
             { page === "account" && user_id != undefined ? (
-              <SettingsAccount user_id={user_id} password={password} />
+              <SettingsAccount user_id={user_id} />
             ) : page === "appearance" ? (
               <SettingsAppearance />
             ) : page === "display" ? (
@@ -154,7 +122,7 @@ export default function Settings() {
           </main>
         </div>
         </div>
-        <BottomNav username={username} name={name} profile={profile} verified={verified}/>
+        <BottomNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
       </div>
     </RootLayout>
   )

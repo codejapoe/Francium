@@ -3,35 +3,32 @@ import { initializeApp } from "firebase/app";
 import { getMessaging, getToken } from "firebase/messaging";
 import { databases } from "@/lib/appwrite/config"
 import { appwriteConfig } from "@/lib/appwrite/config"
-import Cookies from "js-cookie";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: "AIzaSyAitrJKw0H-VyILjf3ThRWxci21-0sPwhM",
-  authDomain: "francium-app.firebaseapp.com",
-  databaseURL: "https://francium-app-default-rtdb.firebaseio.com",
-  projectId: "francium-app",
-  storageBucket: "francium-app.appspot.com",
-  messagingSenderId: "919389091275",
-  appId: "1:919389091275:web:0c3b77c4ff128ba468724e",
-  measurementId: "G-73X1ZB157T"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID,
+    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const messaging = getMessaging(app);
 
-export const generateToken = async () => {
+export const generateToken = async (user_id) => {
     const permission = await Notification.requestPermission();
     if (permission === "granted") {
         const token = await getToken(messaging, {
-            vapidKey: "BCBcNGTKe_pnknhch1ImYGCK5nEi9UAp7AVWQq7PG3hsfZHogi0ETDdOfq9dn2Yf3QSTUgido-eA9K5PeRFv3CI"
+            vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY
         });
-        Cookies.set('fcm', token);
-        const user_id = Cookies.get('user_id');
         const userData = await databases.getDocument(
             appwriteConfig.databaseID,
             appwriteConfig.userCollectionID,

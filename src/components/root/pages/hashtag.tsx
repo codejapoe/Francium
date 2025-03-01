@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from 'react-router-dom';
-import Cookies from "js-cookie";
 import { appwriteConfig, databases } from "@/lib/appwrite/config";
 import { Query } from "appwrite";
-import bcrypt from "bcryptjs";
-import { decryptPassword } from "@/lib/functions/password-manager";
 import Header from '../components/header';
 import SideNav from '../components/side-nav';
 import Trendings from '../components/trendings';
@@ -13,12 +10,13 @@ import FollowSuggestions from '../components/follow-suggestions';
 import BottomNav from '../components/bottom-nav';
 import { Loader2, Bug, Clapperboard, Image, GalleryVertical } from 'lucide-react';
 import RootLayout from "./layout";
-import { generateToken, messaging } from "../../../notifications/firebase.js"
+import { messaging } from "../../../notifications/firebase.js"
 import { onMessage } from "firebase/messaging";
 import { useToast } from "@/components/ui/use-toast.js";
 import Post from '../components/post'
 import { fetchUserDetails } from "@/lib/functions/user-functions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { getCurrentUser } from "@/lib/appwrite/api.js";
 
 export default function HashTag() {
   const { toast } = useToast();
@@ -34,69 +32,28 @@ export default function HashTag() {
   const [postUserDetails, setPostUserDetails] = useState([]);
   const [lastPostId, setLastPostId] = useState(null);
   
-  const handleLogout = () => {
-    Cookies.remove('user_id');
-    Cookies.remove('email');
-    Cookies.remove('password');
-    Cookies.remove('access_token');
-  }
-  
   useEffect(() => {
     const verifyUser = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Check if we have the necessary cookies
-        if (!Cookies.get('user_id') || !Cookies.get('email') || !Cookies.get('password')) {
-          setIsLoading(false);
-          return;
-        }
+      setIsLoading(true);
+      
+      const response = await getCurrentUser();
+      if (response.$id) {
+        setUserID(response.$id);
+        setUsername(response.username);
+        setName(response.name);
+        setProfile(response.profile);
+        setVerified(response.verified);
 
-        const response = await databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [
-            Query.equal('$id', Cookies.get('user_id'))
-          ]
-        );
-
-        if (response.documents.length) {
-          const password = decryptPassword(Cookies.get('password') || "404");
-          return new Promise((resolve) => {
-            bcrypt.compare(password, response.documents[0].password, (err, isMatch) => {
-              if (isMatch || password === import.meta.env.VITE_GOOGLE_PASSWORD) {
-                setUserID(response.documents[0].$id);
-                setUsername(response.documents[0].username);
-                setName(response.documents[0].name);
-                setProfile(response.documents[0].profile);
-                setVerified(response.documents[0].verified);
-
-                // Setup notification listener after successful verification
-                try {
-                  generateToken();
-                  if (messaging) {
-                    onMessage(messaging, (payload) => {
-                      toast({
-                        title: "New Notification!",
-                        description: payload.notification.body,
-                        duration: 3000,
-                      });
-                    });
-                  }
-                } catch (error) {
-                }
-                
-                resolve(true);
-              } else {
-                resolve(false);
-              }
-            });
+        onMessage(messaging, (payload) => {
+          toast({
+            title: payload.notification.title,
+            description: payload.notification.body,
+            duration: 3000,
           });
-        }
-      } catch (error) {
-      } finally {
-        setIsLoading(false);
+        });
       }
+
+      setIsLoading(false);
     };
 
     verifyUser();
@@ -187,7 +144,7 @@ export default function HashTag() {
         <Header activeTab="#" username={username} name={name} profile={profile} verified={verified}/>
         <div className="container mx-auto px-4 py-4 flex gap-8">
           <aside className="hidden lg:block w-1/4 sticky top-20 self-start">
-            <SideNav username={username} name={name} profile={profile} verified={verified}/>
+            <SideNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
           </aside>
           <main className="w-full lg:w-1/2 pb-16 lg:pb-0">
             <Tabs defaultValue="posts" className="w-full">
@@ -380,7 +337,7 @@ export default function HashTag() {
             </div>
           </aside>
         </div>
-        <BottomNav username={username} name={name} profile={profile} verified={verified}/>
+        <BottomNav user_id={user_id} username={username} name={name} profile={profile} verified={verified}/>
       </div>
     </RootLayout>
   );

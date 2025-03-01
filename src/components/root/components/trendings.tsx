@@ -9,7 +9,7 @@ export default function Trendings() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="pb-4">
           <CardTitle>Trendings</CardTitle>
         </CardHeader>
         <CardContent>
