@@ -50,11 +50,6 @@ export default function Settings() {
     },
   ]
 
-  const handleRedirect = () => {
-    Logout();
-    navigate("/settings/appearance");
-  }
-
   useEffect(() => {
     setLoading(true);
     verifyUser();
@@ -110,14 +105,14 @@ export default function Settings() {
           </aside>
           <main className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
             { page === "account" && user_id != undefined ? (
-              <SettingsAccount user_id={user_id} />
+              <SettingsAccount />
             ) : page === "appearance" ? (
               <SettingsAppearance />
             ) : page === "display" ? (
               <SettingsDisplay />
             ) : (
               user_id != undefined &&
-              <SettingsProfile user_id={user_id} name={name} username={username} email={email} />
+              <SettingsProfile user_id={user_id} name={name} username={username} />
             )}
           </main>
         </div>

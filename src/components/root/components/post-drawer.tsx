@@ -14,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { FaGoogleDrive } from "react-icons/fa";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { MapPin, Hash, Users, File, SquarePen, Image, BadgeCheck, Clapperboard, GalleryVertical, Info } from 'lucide-react';
+import { MapPin, Hash, Users, SquarePen, Image, BadgeCheck, Clapperboard, GalleryVertical, Info } from 'lucide-react';
 import { GoogleDriveLogin } from "@/lib/appwrite/api";
 import { appwriteConfig, databases } from "@/lib/appwrite/config";
 
@@ -242,20 +242,6 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
       
       const postID = ID.unique();
 
-      /*
-      let taggedUserIDs;
-
-      if (people) {
-        const taggedUsernames = people.split(",").map(p => p.trim()).filter(p => p !== "");
-        taggedUserIDs = await databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [
-            Query.equal("username", taggedUsernames)
-          ]
-        );
-      }*/
-
       await databases.createDocument(
         appwriteConfig.databaseID,
         appwriteConfig.postCollectionID,
@@ -303,7 +289,6 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
       );
 
       // Send notification
-      /*
       try{
         fetch('https://francium-notification.onrender.com/post', {
           method: 'POST',
@@ -315,7 +300,7 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
             notificationID: notificationID
           })
         });
-      } catch (error) {}*/
+      } catch (error) {}
 
       if (people) {
         const taggedUsernames = people.split(",").map(p => p.trim()).filter(p => p !== "");
@@ -344,7 +329,6 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
               );
 
               // Send post request to notification server
-              /*
               try {
                 fetch('https://francium-notification.onrender.com/tag', {
                   method: 'POST',
@@ -356,7 +340,7 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
                     userID: taggedUser.$id
                   })
                 });
-              } catch (error) {}*/
+              } catch (error) {}
 
               const notificationID2 = ID.unique();
               await databases.createDocument(
@@ -392,45 +376,6 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
           }
         }
       }
-
-      /*
-      if (tag) {
-        const hashtags = tag.split(",").map(t => t.trim()).filter(t => t !== "");
-        for (const hashtag of hashtags) {
-          try {
-            // Try to get existing trending document for this hashtag
-            const trendingDocs = await databases.listDocuments(
-              appwriteConfig.databaseID,
-              appwriteConfig.trendingCollectionID,
-              [Query.equal("hashtag", hashtag)]
-            );
-
-            if (trendingDocs.documents.length > 0) {
-              // Update existing trending document
-              const trendingDoc = trendingDocs.documents[0];
-              await databases.updateDocument(
-                appwriteConfig.databaseID,
-                appwriteConfig.trendingCollectionID,
-                trendingDoc.$id,
-                {
-                  postIDs: [postID, ...trendingDoc.postIDs]
-                }
-              );
-            } else {
-              // Create new trending document
-              await databases.createDocument(
-                appwriteConfig.databaseID,
-                appwriteConfig.trendingCollectionID,
-                ID.unique(),
-                {
-                  hashtag: hashtag,
-                  postIDs: [postID]
-                }
-              );
-            }
-          } catch (error) {}
-        }
-      }*/
 
       // Clear states
       setFiles([])
@@ -551,172 +496,136 @@ export default function PostDrawer({ user_id, username, name, profile, verified 
                     Caption
                   </Label>
                   <Textarea rows={8} placeholder="What's new?" className='mt-2 mb-2 text-md' onChange={handleCaption}/>
-                  <ToggleGroup className='mt-2' type="single">
-                    <ToggleGroupItem value="file">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <File className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>File</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>File</DialogTitle>
-                            <DialogDescription>
-                              Upload files here. Click save when you're done.
-                            </DialogDescription>
-                          </DialogHeader>
-                          { accessToken == undefined ? (
-                            <Button
-                              variant="outline"
-                              onClick={() => GoogleDriveAuth()}
-                              className="w-full"
-                            >
-                              <FaGoogleDrive className="h-4 w-4 mr-2" />
-                              <span>Sign in with Google Drive</span>
-                            </Button>
-                          ) : (
-                            <div className='flex items-center space-x-2'>
-                              <File className="h-4 w-4 text-muted-foreground" />
-                                <Input
-                                  type="file"
-                                  multiple
-                                  accept="image/*, video/*"
-                                  onChange={(e) => setFiles(Array.from(e.target.files))}
-                                />
+                  <div className='space-y-2'>
+                    <Label htmlFor="photo" className="text-sm font-medium">
+                      File
+                    </Label>
+                    { accessToken == undefined ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => GoogleDriveAuth()}
+                        className="w-full"
+                      >
+                        <FaGoogleDrive className="h-4 w-4 mr-2" />
+                        <span>Sign in with Google Drive</span>
+                      </Button>
+                    ) : (
+                      <Input id="photo" type="file" multiple accept="image/*, video/*" onChange={(e) => setFiles(Array.from(e.target.files))}/>
+                    )}
+                    <ToggleGroup className='mt-2' type="single">
+                      <ToggleGroupItem value="location">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Location</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </div>
-                          )}
-                          <DialogFooter>
-                            <DialogClose asChild>
-                              <Button type="button">
-                                Save
-                              </Button>
-                            </DialogClose>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="location">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Location</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Location</DialogTitle>
-                            <DialogDescription>
-                              Enter location you took the photos. Click save when you're done.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Add location" className="text-md" onChange={handleLocation} />
-                          </div>
-                          <DialogFooter>
-                            <DialogClose asChild>
-                              <Button type="button">
-                                Save
-                              </Button>
-                            </DialogClose>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="tag">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Hash className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Hashtag</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Hashtag</DialogTitle>
-                            <DialogDescription>
-                              Enter hashtags here. Click save when you're done.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Hash className="h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Add tags" className="text-md" onChange={handleTag} />
-                          </div>
-                          <DialogFooter>
-                            <DialogClose asChild>
-                              <Button type="button">
-                                Save
-                              </Button>
-                            </DialogClose>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="people">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <div>
-                            <TooltipProvider>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Users className="h-4 w-4 text-muted-foreground" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Tag People</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </TooltipProvider>
-                          </div>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Tag people</DialogTitle>
-                            <DialogDescription>
-                              Tag people in your content. Click save when you're done.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Users className="h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Add tagged people" className="text-md" onChange={handlePeople} />
-                          </div>
-                          <DialogFooter>
-                            <DialogClose asChild>
-                              <Button type="button">
-                                Save
-                              </Button>
-                            </DialogClose>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </ToggleGroupItem>
-                  </ToggleGroup>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Location</DialogTitle>
+                              <DialogDescription>
+                                Enter location you took the photos. Click save when you're done.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <MapPin className="h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="Add location" className="text-md" onChange={handleLocation} />
+                            </div>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button type="button">
+                                  Save
+                                </Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="tag">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Hash className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Hashtag</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Hashtag</DialogTitle>
+                              <DialogDescription>
+                                Enter hashtags here. Click save when you're done.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Hash className="h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="Add tags" className="text-md" onChange={handleTag} />
+                            </div>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button type="button">
+                                  Save
+                                </Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="people">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Users className="h-4 w-4 text-muted-foreground" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Tag People</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[425px]">
+                            <DialogHeader>
+                              <DialogTitle>Tag people</DialogTitle>
+                              <DialogDescription>
+                                Tag people in your content. Click save when you're done.
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Users className="h-4 w-4 text-muted-foreground" />
+                              <Input placeholder="Add tagged people" className="text-md" onChange={handlePeople} />
+                            </div>
+                            <DialogFooter>
+                              <DialogClose asChild>
+                                <Button type="button">
+                                  Save
+                                </Button>
+                              </DialogClose>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
                 </TabsContent>
                 <TabsContent value="carousel">
                   <div className="flex items-start justify-between mt-4 mb-2">

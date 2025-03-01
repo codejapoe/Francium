@@ -618,7 +618,7 @@ export default function AccountProfile() {
     await databases.updateDocument(
       appwriteConfig.databaseID,
       appwriteConfig.userCollectionID,
-      user_id,
+      currentUserID,
       {
         followings: currentFollowings.filter(item => item !== user_id)
       }

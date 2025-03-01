@@ -5,37 +5,37 @@ import { useToast } from "@/components/ui/use-toast.js";
 import { Button } from '@/components/ui/button'
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { appwriteConfig, databases } from "@/lib/appwrite/config";
-import Cookies from 'js-cookie';
 import { Label } from '@/components/ui/label';
 import { LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Logout } from '@/lib/appwrite/api';
-
-interface SettingsAccountProps {
-  user_id: string;
-}
+import { account } from '@/lib/appwrite/config';
 
 const accountFormSchema = z.object({
-  newPassword: z
-    .string()
-    .min(8, {
-        message: "New password must be at least 8 characters."
-    })
-    .max(20, {
-        message: "New password must be less than 20 characters."
-  }),
+    password: z
+      .string()
+      .max(20, {
+        message: 'Old password must not be longer than 20 characters.',
+    }),
+    newPassword: z
+        .string()
+        .min(8, {
+            message: "New password must be at least 8 characters."
+        })
+        .max(20, {
+            message: "New password must be less than 20 characters."
+    }),
 })
 
 type accountFormValues = z.infer<typeof accountFormSchema>
 
-export default function AccountForm({user_id}: SettingsAccountProps) {
+export default function AccountForm() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  /*
   const [isPasswordIncorrect, setIsPasswordIncorrect] = useState(false);
   const defaultValues: Partial<accountFormValues> = {
+    password: '',
     newPassword: ''
   }
   const form = useForm<accountFormValues>({
@@ -46,69 +46,33 @@ export default function AccountForm({user_id}: SettingsAccountProps) {
 
   async function onSubmit(data: accountFormValues) {
     try {
-        let pwd = '';
-
-        if (data.password === '') {
-            pwd = import.meta.env.VITE_GOOGLE_PASSWORD;
-        } else {
-            pwd = data.password;
-        }
-        
-        bcrypt.compare(pwd, password, async (err, isMatch) => {
-            if (isMatch) {
-                // Update the password in database
-                await databases.updateDocument(
-                    appwriteConfig.databaseID,
-                    appwriteConfig.userCollectionID,
-                    user_id,
-                    {
-                        password: hashPassword(data.newPassword)
-                    }
-                );
-
-                // Update cookie with new password
-                Cookies.set('password', encryptPassword(data.newPassword));
-                
-                setIsPasswordIncorrect(false);
-                toast({
-                    title: "Success",
-                    description: "Password updated successfully",
-                });
-            } else if (err || !isMatch) {
-                setIsPasswordIncorrect(true);
-                toast({
-                    title: "Error",
-                    description: "Incorrect password",
-                    variant: "destructive",
-                });
-            }
-        });
-      
+      await account.updatePassword(
+        data.newPassword,
+        data.password
+      );
+      form.reset();
+      setIsPasswordIncorrect(false);
+      toast({
+        title: "Success",
+        description: "Password updated successfully.",
+        variant: "default",
+      });
     } catch (error) {
+      setIsPasswordIncorrect(true);
       toast({
         title: "Error",
         description: "Failed to update password. Please try again.",
         variant: "destructive",
       });
     }
-  }*/
+  }
 
-  const handleSignOut = () => {
-    Logout();
-    navigate("/explore");
+  const handleSignout = async () => {
+    await Logout();
+    navigate('/explore');
   }
 
   return (
-    <div className='mt-8 space-y-4'>
-      <Label className='text-md'>Actions</Label><br/>
-      <Button variant='destructive' onClick={() => handleSignOut()}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign out
-      </Button>
-    </div>
-  )
-}
-    {/*
     <Form {...form}>
       <Label className='text-md'>Change Password</Label>
       <form onSubmit={form.handleSubmit(onSubmit)} className='mt-4 space-y-4'>
@@ -149,4 +113,13 @@ export default function AccountForm({user_id}: SettingsAccountProps) {
         />
         <Button type='submit'>Update password</Button>
       </form>
-    </Form>*/}
+      <div className='mt-8 space-y-4'>
+        <Label className='text-md'>Actions</Label><br/>
+        <Button variant='destructive' onClick={() => handleSignout()}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign out
+        </Button>
+      </div>
+    </Form>
+  )
+}

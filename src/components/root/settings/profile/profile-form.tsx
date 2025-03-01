@@ -7,14 +7,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from '@/components/ui/input'
 import { useEffect } from 'react'
 import { appwriteConfig, databases } from "@/lib/appwrite/config";
-import Cookies from 'js-cookie';
 import { Query } from 'appwrite';
 
 interface SettingsProfileProps {
   user_id: string;
   username: string;
   name: string;
-  email: string;
 }
 
 const profileFormSchema = z.object({
@@ -43,12 +41,11 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
-export default function ProfileForm({user_id, username, name, email}: SettingsProfileProps) {
+export default function ProfileForm({user_id, username, name}: SettingsProfileProps) {
   const { toast } = useToast();
   const defaultValues: Partial<ProfileFormValues> = {
     username: username,
     fullname: name,
-    email: email
   }
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -60,41 +57,23 @@ export default function ProfileForm({user_id, username, name, email}: SettingsPr
     form.reset({
       username: username || '',
       fullname: name || '',
-      email: email || ''
     })
-  }, [form, username, name, email])
+  }, [form, username, name])
 
   async function onSubmit(data: ProfileFormValues) {
     try {
-      // Check for existing username and email
-      const [usernameCheck, emailCheck] = await Promise.all([
-        databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [Query.equal('username', data.username)]
-        ),
-        databases.listDocuments(
-          appwriteConfig.databaseID,
-          appwriteConfig.userCollectionID,
-          [Query.equal('email', data.email)]
-        )
-      ]);
+      // Check for existing username
+      const usernameCheck = await databases.listDocuments(
+        appwriteConfig.databaseID,
+        appwriteConfig.userCollectionID,
+        [Query.equal('username', data.username)]
+      );
 
       // If username exists and it's not the current user
       if (usernameCheck.documents.length > 0 && usernameCheck.documents[0].$id !== user_id) {
         toast({
           title: "Error",
           description: "Username already exists",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // If email exists and it's not the current user
-      if (emailCheck.documents.length > 0 && emailCheck.documents[0].$id !== user_id) {
-        toast({
-          title: "Error",
-          description: "Email already exists",
           variant: "destructive",
         });
         return;
@@ -108,12 +87,9 @@ export default function ProfileForm({user_id, username, name, email}: SettingsPr
         {
           username: data.username,
           name: data.fullname,
-          email: data.email,
         }
       );
 
-      Cookies.set('email', data.email);
-      
       toast({
         title: "Success",
         description: "Profile updated successfully",
@@ -159,19 +135,6 @@ export default function ProfileForm({user_id, username, name, email}: SettingsPr
               <FormDescription>
                 This is your public display name.
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name='email'
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder='example@gmail.com' {...field} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
