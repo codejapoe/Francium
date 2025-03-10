@@ -51,7 +51,7 @@ Feel free to email me via codejapoe@gmail.com.
 
 ## Collaborators
 
-Founder & Developer: [@codejapoe](https://www.github.com/codejapoe)
+Founder & Developer: [@codejapoe](https://www.github.com/codejapoe)<br />
 Co-Founder: [@AungKaungMyatNaing](https://github.com/AungKaungMyatNaing)
 
 ## External Link
